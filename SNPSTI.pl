@@ -1456,7 +1456,7 @@ sub LoadSNPs
 	    #Error check the first line
 	    my @errors =
 	      (grep {$_ !~ /^(\D*\d+\D*|\d*|\d+\D.*)$/} split(/\s+/,$curline));
-	    if(scalar(@errors))
+	    if($framesort && scalar(@errors))
 	      {
                error("Invalid SNP names: [@errors] on the first line: ",
 		     "[$curline].\n",
