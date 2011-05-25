@@ -20,7 +20,7 @@ $| = 1;
 #Set up a path to the tree module on the cluster using the environment variable
 #"SNPSTI_CLUSTER_TREE_PATH"
 BEGIN
-  {if(exists($ENV{SNPSTI_CLUSTER_TREE_PATH}))
+  {if(exists($ENV{SNPSTI_CLUSTER_TREE_PATH}) && $ENV{SNPSTI_CLUSTER_TREE_PATH} ne '')
      {use lib $ENV{SNPSTI_CLUSTER_TREE_PATH}}}
 
 #If this is a run on the cluster, read in arguments from the environment
@@ -50,6 +50,7 @@ my $non_binary_nodes  = [];
 my $all_snps_used     = {};
 my $solutions         = {};
 my $snp_data_buffer   = [];
+my $partial_suffix    = '.prtl';
 my($treefile,$snpfile,$verbose,$max_set_size_per_node,$help,$tree,$label_array,
    $num_SNPs,$num_genomes,$node_list,$solution_array,$framesort,$start_node,
    $min_num_solns_per_node,$breadth_first_order,$reverse_order,
@@ -84,6 +85,7 @@ GetOptions('t|treefile=s'            => \$treefile,
 	   'i|internal-nodes-only!'  => \$internal_nodes_only,
 	   'e|leaves-only!'          => \$leaves_only,
            'g|greedy!'               => \$greedy_flag,
+           'partial-suffix=s'        => \$partial_suffix,
            'x|max-greedies=s'        => \$max_greedies,
            'u|quality-ratio=s'       => \$quality_ratio,
 	   'c|chance=s'              => \$equal_chance,
@@ -173,6 +175,26 @@ if(LoadSNPs($snp_names,$genome_names,$snpfile,$verbose,$snp_data_buffer,
     exit(0);
   }
 my $optimized_snps = optimizeSNPs($snp_names,$genome_names,$snp_data_buffer);
+
+#Prepare output for partial solutions generated from greedy set building
+if($greedy_flag && $partial_suffix ne '')
+  {
+    if(-e "$snpfile$partial_suffix")
+      {error("File exists: [$snpfile$partial_suffix].  Greedy output going to STDERR")}
+    else
+      {
+        if(scalar(@analyze_nodes))
+          {$partial_suffix = '.' . $analyze_nodes[0] . $partial_suffix}
+        unless(open(PRTL,">$snpfile$partial_suffix"))
+          {
+            error("Unable to open partial greedy set file for output [$snpfile$partial_suffix].  $!");
+            exit(10);
+          }
+        select(PRTL);
+        $|=1;
+        select(STDOUT);
+      }
+  }
 
 #Print out a list of equivalent SNPs to STDERR
 verbose("These SNPs are equivalent:\n\t[",
@@ -500,13 +522,14 @@ foreach my $node (@$node_list)
 	      }
 
 	    $greedy_set_count++;
-	    verbose(1,
-		    "Greedy set $greedy_set_count: \[",
-		    join(',',
-			 map {"[$snp_names->[$optimized_snps->[$_]->[0]]]:" .
-				"($scores->{$_})"}
-			 @$greedy_snp_candidates),
-		    "].\n");
+            my $greedymsg = "Greedy set $greedy_set_count: \[" .
+                              join(',',
+                                   map {"[$snp_names->[$optimized_snps->[$_]->[0]]]:" .
+                                        "($scores->{$_})"}
+                                     @$greedy_snp_candidates) .
+                              "].\n";
+	    verbose(1,$greedymsg);
+            print PRTL $greedymsg if($partial_suffix ne '');
 
 	    push(@$final_greedy_snp_candidates,@$greedy_snp_candidates);
 	    $greedy_snp_candidates = [];
@@ -521,14 +544,13 @@ foreach my $node (@$node_list)
 	@$final_greedy_snp_candidates =
 	  sort {$a <=> $b} @$final_greedy_snp_candidates;
 
-	verbose("Final Greedy set of ",
-		scalar(@$final_greedy_snp_candidates),
-		" SNPs: [",
-		join(',',
-		     map {$snp_names->[$optimized_snps->[$_]->[0]]}
-		     @$final_greedy_snp_candidates),
-		"].\nBeginning exhaustive search of the greedy ",
-		"SNPs.");
+        my $greedymsg = "Final Greedy set of " . scalar(@$final_greedy_snp_candidates) . " SNPs: [" .
+                join(',',
+                     map {$snp_names->[$optimized_snps->[$_]->[0]]}
+                     @$final_greedy_snp_candidates) .
+                "].\n";
+	verbose($greedymsg,"Beginning exhaustive search of the greedy SNPs.");
+        print PRTL $greedymsg if($partial_suffix ne '');
       }
 
     verbose("SELECTED ANALYSIS SNPS:\n\t",
@@ -800,6 +822,8 @@ foreach my $node (@$node_list)
     #Put a hard return between sets of node solutions
     print("\n");
   }
+
+close(PRTL) if($greedy_flag && $partial_suffix ne '');
 
 print("#TOTAL SNPS USED IN ALL SOLUTIONS (",
       scalar(keys(%$all_snps_used)),
@@ -2530,6 +2554,7 @@ sub getNextGreedySNP
     my $linesize = 0;
     my $greedy_pool_index = 0;
     my $max_index = 0;
+    my $greedymsg = '';
     foreach my $snp (@$greedy_snp_pool)
       {
 #print STDERR "TEST GREEDILY EVALUATING SNP: $snp WITH CANDIDATES: @$greedy_snp_candidates\n";
@@ -2552,6 +2577,11 @@ sub getNextGreedySNP
 
 	    $maxscore = $score;
 	    $maxsnp   = $snp;
+
+            $greedymsg = "GREEDY ITERATION: [$greedy_sol_num]  SIZE: [" .
+              (scalar(@$greedy_snp_candidates) + 1) .
+                "] SNP [$snp_names->[$optimized_snps->[$snp]->[0]]] IMPROVEMENT = $score.  " .
+                  "MAX [$snp_names->[$optimized_snps->[$maxsnp]->[0]]] = $maxscore.\n"
 	  }
 #	else
 #	  #Keep the evaluated SNPs in a temporary pool so that we don't have to
@@ -2578,6 +2608,11 @@ sub getNextGreedySNP
 #	    @$greedy_snp_pool = grep {$_ ne $maxsnp} @$greedy_snp_pool;
 	    last;
 	  }
+      }
+
+    if($partial_suffix ne '')
+      {
+        print PRTL $greedymsg;
       }
 
 #    #Only use the temporary pool if it has all the SNPs in it (i.e. didn't sto
@@ -2609,7 +2644,7 @@ sub getRatioResolved
                                          #labelled in this array.  A genome
                                          #"counts", if it's been placed in a
                                          #real well because a SNP value put it
-                                         #there (other than a dot).  INTERNAL
+                                         #there (other than a dot).  This allows us to skip genomes which provide no information for the particular set of SNPs supplied UNTIL a real value is encountered.  It is assumed/guaranteed elsewhere that all genomes will have a value for at least one of the SNPs provided (if not, 0 is returned).  INTERNAL
                                          #USE ONLY.  DO NOT SUPPLY.
     my $not_first_call         = $_[5];  #INTERNAL USE ONLY.  DO NOT SUPPLY.
 
@@ -2933,7 +2968,13 @@ sub getRatioResolved
 					 1)}
 	elsif($label_counts->[0] &&
 	      $total_counts->[0] == $real_label_counts->[0])
-	  {$dot_score = 1}
+	  {
+            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
+            if(scalar(@$proposed_solution) > 1)
+              {$dot_score = 0}
+            else
+              {$dot_score = 1}
+          }
 	else
 	  {$dot_score = 0}
 
@@ -2981,7 +3022,13 @@ sub getRatioResolved
 	      ($real_label_counts->[1] + $real_label_counts->[0]) ==
 	      #the total real + unreal genomes
 	      ($total_counts->[1] + $total_counts->[0]))
-	  {$a_score = 1}
+	  {
+            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
+            if(scalar(@$proposed_solution) > 1)
+              {$a_score = 0}
+            else
+              {$a_score = 1}
+          }
 	#Otherwise the score is zero
 	else
 	  {$a_score = 0}
@@ -3013,7 +3060,13 @@ sub getRatioResolved
 	       ($total_counts->[2] && $label_counts->[0])) &&
 	      ($real_label_counts->[2] + $real_label_counts->[0]) ==
 	      ($total_counts->[2] + $total_counts->[0]))
-	  {$t_score = 1}
+	  {
+            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
+            if(scalar(@$proposed_solution) > 1)
+              {$t_score = 0}
+            else
+              {$t_score = 1}
+          }
 	else
 	  {$t_score = 0}
 
@@ -3044,7 +3097,13 @@ sub getRatioResolved
 	       ($total_counts->[3] && $label_counts->[0])) &&
 	      ($real_label_counts->[3] + $real_label_counts->[0]) ==
 	      ($total_counts->[3] + $total_counts->[0]))
-	  {$g_score = 1}
+	  {
+            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
+            if(scalar(@$proposed_solution) > 1)
+              {$g_score = 0}
+            else
+              {$g_score = 1}
+          }
 	else
 	  {$g_score = 0}
 
@@ -3075,7 +3134,13 @@ sub getRatioResolved
 	       ($total_counts->[4] && $label_counts->[0])) &&
 	      ($real_label_counts->[4] + $real_label_counts->[0]) ==
 	      ($total_counts->[4] + $total_counts->[0]))
-	  {$c_score = 1}
+	  {
+            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
+            if(scalar(@$proposed_solution) > 1)
+              {$c_score = 0}
+            else
+              {$c_score = 1}
+          }
 	else
 	  {$c_score = 0}
 
@@ -3106,7 +3171,13 @@ sub getRatioResolved
 	       ($total_counts->[5] && $label_counts->[0])) &&
 	      ($real_label_counts->[5] + $real_label_counts->[0]) ==
 	      ($total_counts->[5] + $total_counts->[0]))
-	  {$gap_score = 1}
+	  {
+            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
+            if(scalar(@$proposed_solution) > 1)
+              {$gap_score = 0}
+            else
+              {$gap_score = 1}
+          }
 	else
 	  {$gap_score = 0}
 
@@ -3228,12 +3299,14 @@ sub getRatioResolved
 			       $parents_score == 1 ? 0 :
 			       (($children_score - $parents_score) /
 				(1 - $parents_score)));
-#print STDERR ("TEST: CHILDREN SCORE: $children_score PARENT SCORE: $parents_score IMPROVEMENT: $improvement FOR LAST 2 SNPs [$snp_names->[$snp],$snp_names->[$proposed_solution->[0]]]\n") if($improvement < 0);
+#print STDERR ("\nTEST: CHILDREN SCORE: $children_score PARENT SCORE: $parents_score IMPROVEMENT: $improvement FOR LAST 2 SNPs [$snp_names->[$snp],$snp_names->[$proposed_solution->[0]]]\n") if($improvement < 0);
 	    return($improvement);
 	  }
 	else
 	  #Return the children score
-	  {return($children_score)}
+	  {
+#print STDERR "\nTEST: RETURNING AVERAGED CHILDREN SCORES: [$children_score] FROM THESE CHILD SCORES: [$dot_score] [$a_score] [$t_score] [$g_score] [$c_score] [$gap_score]\n";
+return($children_score)}
       }
     else
       {
@@ -3276,6 +3349,7 @@ sub getRatioResolved
 
 #	      $label_counts->[$well] + $unlabel_counts->[$well];
 	  }
+#print STDERR "\nNUMBER RESOLVED AT LEAF: [$score] OUT OF: [$total]\n";
 	#Normalize the score using the total number of genomes in all wells
 	$score /= $total
 	  if($total);
@@ -3284,6 +3358,8 @@ sub getRatioResolved
 	return($score);
       }
   }
+
+
 
 
 
