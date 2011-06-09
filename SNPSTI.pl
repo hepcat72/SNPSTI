@@ -1868,8 +1868,8 @@ CLUSTER USAGE: See the "HOW TO PARALLELIZE SNPSTI" section of the --help output.
                     could be more than the number specified through this
                     option.
      -u   OPTIONAL  [0.1] Quality ratio cut-off.  If a SNP being added to the
-                    greedy set further resolves fewer this fraction of
-                    previously unresolved nodes and max_greedies has not yet
+                    greedy set further resolves fewer than this fraction of
+                    genomes and max_greedies has not yet
                     been reached (or is zero), the current greedy solution will
                     be saved and a new greedy solution will be started.
      -c   OPTIONAL  [0] When two SNPs both improve a solution by the same
@@ -3222,7 +3222,54 @@ sub getRatioResolved
 
 #        my $failsafe = (($a_labels + $t_labels + $g_labels + $c_labels + $gap_labels) == 0 && ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 && $dot_labels == 0) || (scalar(grep {$_} @{$label_counts}[1..5]) > 0))  ? 1 : 0);
 	my $children_score = 0;
-	$children_score = ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ? $dot_score : 0) * $label_counts->[0] +
+#	$children_score = ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ?
+#			    $dot_score : 0) * $label_counts->[0] +
+#			   #Multiply the ratio of real isolated labelled counts
+#			   $a_score *
+#			   #by the total number of label counts that were put
+#			   #down that well to get a relative value of how many
+#			   #labelled genomes at this level of the tree were
+#			   #isolated by the lower level of the tree.  Include
+#			   #the number from the pseudowell only if there are
+#			   #labelled genomes in the real well
+#			   ($label_counts->[1] ?
+#			    ($label_counts->[1] + $label_counts->[0]) : 0) +
+#			   $t_score *
+#			   ($label_counts->[2] ?
+#			    ($label_counts->[2] + $label_counts->[0]) : 0) +
+#			   $g_score *
+#			   ($label_counts->[3] ?
+#			    ($label_counts->[3] + $label_counts->[0]) : 0) +
+#			   $c_score *
+#			   ($label_counts->[4] ?
+#			    ($label_counts->[4] + $label_counts->[0]) : 0) +
+#			   $gap_score *
+#			   ($label_counts->[5] ?
+#			    ($label_counts->[5] + $label_counts->[0]) : 0)) /
+#	   #Divide the number of isolated real labelled genomes above by the
+#	   #total number of labelled genomes below to see how good the answer
+#	   #at the lower level of the tree was
+#	   ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ? $label_counts->[0] : 0) +
+#	    $label_counts->[1] +
+#	    ($label_counts->[1] ? $label_counts->[0] : 0) +
+#	    $label_counts->[2] +
+#	    ($label_counts->[2] ? $label_counts->[0] : 0) +
+#	    $label_counts->[3] +
+#	    ($label_counts->[3] ? $label_counts->[0] : 0) +
+#	    $label_counts->[4] +
+#	    ($label_counts->[4] ? $label_counts->[0] : 0) +
+#	    $label_counts->[5] +
+#	    ($label_counts->[5] ? $label_counts->[0] : 0))
+#	   if($label_counts->[0] ||
+#	      $label_counts->[1] ||
+#	      $label_counts->[2] ||
+#	      $label_counts->[3] ||
+#	      $label_counts->[4] ||
+#	      $label_counts->[5]);
+
+	$children_score = ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ?
+			    $dot_score : 0) * $label_counts->[0] +
+
 			   #Multiply the ratio of real isolated labelled counts
 			   $a_score *
 			   #by the total number of label counts that were put
@@ -3231,40 +3278,28 @@ sub getRatioResolved
 			   #isolated by the lower level of the tree.  Include
 			   #the number from the pseudowell only if there are
 			   #labelled genomes in the real well
-			   ($label_counts->[1] ?
-			    ($label_counts->[1] + $label_counts->[0]) : 0) +
-			   $t_score *
-			   ($label_counts->[2] ?
-			    ($label_counts->[2] + $label_counts->[0]) : 0) +
-			   $g_score *
-			   ($label_counts->[3] ?
-			    ($label_counts->[3] + $label_counts->[0]) : 0) +
-			   $c_score *
-			   ($label_counts->[4] ?
-			    ($label_counts->[4] + $label_counts->[0]) : 0) +
-			   $gap_score *
-			   ($label_counts->[5] ?
-			    ($label_counts->[5] + $label_counts->[0]) : 0)) /
+			   $label_counts->[1] +
+			   $t_score   * $label_counts->[2] +
+			   $g_score   * $label_counts->[3] +
+			   $c_score   * $label_counts->[4] +
+			   $gap_score * $label_counts->[5]) /
+
 	   #Divide the number of isolated real labelled genomes above by the
 	   #total number of labelled genomes below to see how good the answer
 	   #at the lower level of the tree was
-	   ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ? $label_counts->[0] : 0) +
+	   ($label_counts->[0] +
 	    $label_counts->[1] +
-	    ($label_counts->[1] ? $label_counts->[0] : 0) +
 	    $label_counts->[2] +
-	    ($label_counts->[2] ? $label_counts->[0] : 0) +
 	    $label_counts->[3] +
-	    ($label_counts->[3] ? $label_counts->[0] : 0) +
 	    $label_counts->[4] +
-	    ($label_counts->[4] ? $label_counts->[0] : 0) +
-	    $label_counts->[5] +
-	    ($label_counts->[5] ? $label_counts->[0] : 0))
+	    $label_counts->[5])
 	   if($label_counts->[0] ||
 	      $label_counts->[1] ||
 	      $label_counts->[2] ||
 	      $label_counts->[3] ||
 	      $label_counts->[4] ||
 	      $label_counts->[5]);
+
 #	$children_score = ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ? $dot_score : 0) +
 #			   $a_score + $t_score + $g_score + $c_score + $gap_score) /
 #	   #Divide the number of isolated real labelled genomes above by the
@@ -3291,12 +3326,13 @@ sub getRatioResolved
 	    ##
 
             my $parents_score = 0;
-            my $parents_total = 0;
+#            my $parents_total = 0;
+            my $parents_total = $label_counts->[0];
             if(scalar(grep {$_} @{$label_counts}[1..5]) == 0)
               {
                 $parents_score = $label_counts->[0] *
                   ($label_counts->[0] / $total_counts->[0]);
-                $parents_total = $label_counts->[0];
+#                $parents_total = $label_counts->[0];
               }
             else
               {
@@ -3314,14 +3350,24 @@ sub getRatioResolved
 		    #that a genome in a well was added because of a real SNP value
 		    #and not by a pseudowell
                     #5/26/2011 - I took out the "real" thing because I think it is inflating the returned scores.  By only including the reals, the unreal ones, yet unresolved start to appear resolved in the parent nodes of the solution, but they were included in the children nodes and could essentially make the solution worse than the parent inadvertently, potentially leading to negative improvement scores.
+
+#		    $parents_score +=
+#		      ($label_counts->[$well] + $label_counts->[0]) *
+#		        (($label_counts->[$well] + $label_counts->[0]) /
+#		         ($total_counts->[$well] + $total_counts->[0]))
+##		          #Only count these calculations if there are labelled
+##		          #genomes present in the well
+##		          if($label_counts->[$well]);
+#                          if($total_counts->[$well] || $total_counts->[0]);
+
 		    $parents_score +=
-		      ($label_counts->[$well] + $label_counts->[0]) *
-		        (($label_counts->[$well] + $label_counts->[0]) /
-		         ($total_counts->[$well] + $total_counts->[0]))
+		      $label_counts->[$well] *
+		        ($label_counts->[$well] /
+		         ($total_counts->[$well] +
+			  ($total_counts->[0] - $label_counts->[0])))
 #		          #Only count these calculations if there are labelled
-#		          #genomes present in the well
-#		          if($label_counts->[$well]);
-                          if($total_counts->[$well] || $total_counts->[0]);
+#		          #genomes present in the real well
+                          if($total_counts->[$well]);
 
 
 #		#Subtract .5 from the larger of the count ratios for this well
@@ -3337,10 +3383,12 @@ sub getRatioResolved
 #		   - .5) * 2 *
 #		     ($label_counts->[$well] + $unlabel_counts->[$well]);
 
-		    #Add to the total if genomes in the real well exist
-		    $parents_total += $label_counts->[$well] + $label_counts->[0]
-#		      if($label_counts->[$well]);
-                      ;
+#		    #Add to the total if genomes in the real well exist
+#		    $parents_total += $label_counts->[$well] + $label_counts->[0]
+##		      if($label_counts->[$well]);
+#                      ;
+
+		    $parents_total += $label_counts->[$well];
 
 #		  $label_counts->[$well] + $unlabel_counts->[$well];
 #print STDERR "TEST: PARENT'S WELL $well CONTAINS $real_label_counts->[$well] REAL LABELLED GENOMES AND $label_counts->[$well] TOTAL LABELLED AND $total_counts->[$well] TOTAL GENOMES\n";
@@ -3367,28 +3415,44 @@ sub getRatioResolved
 if($improvement < 0)
 {
             my $parents_score = 0;
-            my $parents_total = 0;
+#            my $parents_total = 0;
+            my $parents_total = $label_counts->[0];
             if($total_counts->[0] && scalar(grep {$_} @{$label_counts}[1..5]) == 0)
               {
                 $parents_score = $label_counts->[0] *
                   ($label_counts->[0] / $total_counts->[0]);
-                $parents_total = $label_counts->[0];
+#                $parents_total = $label_counts->[0];
 #print STDERR "SET parents score to $parents_score and total to $parents_total because there were no labeled genomes in the non-dot wells.  (Should not happen)\n";
               }
             foreach my $well (1..5)
               {
 #print STDERR ("WELL: $well ",'$parents_score'," += ($label_counts->[$well] + $label_counts->[0]) * (($label_counts->[$well] + $label_counts->[0]) / ($total_counts->[$well] + $total_counts->[0])) if($label_counts->[$well]);\n");
+
+#                $parents_score +=
+#                  ($label_counts->[$well] + $label_counts->[0]) *
+#                    (($label_counts->[$well] + $label_counts->[0]) /
+#                     ($total_counts->[$well] + $total_counts->[0]))
+#                      #Only count these calculations if there are labelled
+#                      #genomes present in the well
+##                      if($label_counts->[$well]);
+#                      if($total_counts->[$well] || $total_counts->[0]);
+
                 $parents_score +=
-                  ($label_counts->[$well] + $label_counts->[0]) *
-                    (($label_counts->[$well] + $label_counts->[0]) /
-                     ($total_counts->[$well] + $total_counts->[0]))
+                  $label_counts->[$well] *
+                    ($label_counts->[$well] /
+                     ($total_counts->[$well] +
+		      ($total_counts->[0] - $label_counts->[0])))
                       #Only count these calculations if there are labelled
                       #genomes present in the well
 #                      if($label_counts->[$well]);
-                      if($total_counts->[$well] || $total_counts->[0]);
+                      if($total_counts->[$well]);
 
 #print STDERR ('$parents_total'," += $label_counts->[$well] + $label_counts->[0] if($label_counts->[$well]);\n");
-                $parents_total += $label_counts->[$well] + $label_counts->[0]
+
+#                $parents_total += $label_counts->[$well] + $label_counts->[0]
+#                  if($label_counts->[$well]);
+
+                $parents_total += $label_counts->[$well]
                   if($label_counts->[$well]);
               }
 
@@ -3398,8 +3462,9 @@ if($improvement < 0)
 	else
 	  #Return the children score
 	  {
-print STDERR "\nTEST: RETURNING AVERAGED CHILDREN SCORES: [$children_score] FROM THESE CHILD SCORES: [$dot_score] [$a_score] [$t_score] [$g_score] [$c_score] [$gap_score]\n" if($children_score < 0 || $children_score > 1);
-return(wantarray ? ($children_score,1) : $children_score)}
+#print STDERR "\nTEST: RETURNING AVERAGED CHILDREN SCORES: [$children_score] FROM THESE CHILD SCORES: [$dot_score] [$a_score] [$t_score] [$g_score] [$c_score] [$gap_score]\n" if($children_score < 0 || $children_score > 1);
+	    return(wantarray ? ($children_score,1) : $children_score);
+          }
       }
     else
       {
@@ -3456,7 +3521,7 @@ return(wantarray ? ($children_score,1) : $children_score)}
 #		 ($label_counts->[$well] + $unlabel_counts->[$well]) : 1)) -
 #	       .5) * 2 * ($label_counts->[$well] + $unlabel_counts->[$well]);
 
-print STDERR ("WELL $well HAS $label_counts->[$well]  REAL AND $label_counts->[0] FAKE LABELED GENOMES AND $total_counts->[$well] + $total_counts->[0] TOTAL GENOMES\n") if($snp_names->[$snp] eq "16.69397102.69409491");
+#print STDERR ("WELL $well HAS $label_counts->[$well]  REAL AND $label_counts->[0] FAKE LABELED GENOMES AND $total_counts->[$well] + $total_counts->[0] TOTAL GENOMES\n") if($snp_names->[$snp] eq "16.69397102.69409491");
 #	        $total += $label_counts->[$well] + $label_counts->[0]
 ##	          if($label_counts->[$well]);
 #                  ;
@@ -3465,7 +3530,7 @@ print STDERR ("WELL $well HAS $label_counts->[$well]  REAL AND $label_counts->[0
 #	      $label_counts->[$well] + $unlabel_counts->[$well];
 	      }
           }
-print STDERR "\nNUMBER RESOLVED for SNP $snp_names->[$snp]: [$score] OUT OF: [$total]\n" if($snp_names->[$snp] eq "16.69397102.69409491");
+#print STDERR "\nNUMBER RESOLVED for SNP $snp_names->[$snp]: [$score] OUT OF: [$total]\n" if($snp_names->[$snp] eq "16.69397102.69409491");
 	#Normalize the score using the total number of genomes in all wells
         my $normal_score = 0;
 	$normal_score = $score / $total
