@@ -484,10 +484,12 @@ foreach my $node (@$node_list)
 	my $num_greedies     = 0;
 	my $greedy_set_count = 0;
 	my $greedy_sol_num   = 0;
+        my $num_added        = 0;
 	do
 	  {
-	    my $num_added = 0;
+	    $num_added = 0;
 	    my $ratio = 0;
+            my $prev_ratio = 0;
 	    my $scores = {};
 	    $greedy_sol_num++;
 
@@ -510,7 +512,7 @@ foreach my $node (@$node_list)
                                                       #perfect SNPs plus enough
                                                       #to find alternatives
 		last if($max_greedies <= $num_greedies ||
-			$ratio < $quality_ratio ||
+			($ratio - $prev_ratio) < $quality_ratio ||
 			$ratio == 1 ||
 			#I added the below check to stop greedy sets from
 			#getting out of hand.  If I ever get around to fixing
@@ -519,6 +521,7 @@ foreach my $node (@$node_list)
 			#improve the previous solution exist, I should remove
 			#this check
 		        $num_added >= (2 * $max_set_size_per_node));
+                $prev_ratio = $ratio;
 	      }
 
 	    $greedy_set_count++;
@@ -536,8 +539,8 @@ foreach my $node (@$node_list)
 	  }
 	    while(scalar(@$relevant_optimal_snps) &&
 		  (($num_greedies < $max_greedies || $max_greedies == 0) &&
-		   ($num_added > 1 || quality_ratio == 0)));
-
+		   ($num_added > 1 || $quality_ratio == 0)));
+print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $max_greedies || $max_greedies == 0) && ($num_added > 1 || $quality_ratio == 0))\n");
 	#I know there are places where SNP order is important.  I can't
 	#remember where that is though, so I'm going to sort the greedies here
 	#just to be safe.
@@ -2564,7 +2567,7 @@ sub getNextGreedySNP
 				   [$optimized_snps->[$snp]->[0]]),
 				  $snp_data_buffer,
 				  $label_array,
-				  $relevant_genomes);
+				  $relevant_genomes,1);
 #print STDERR "TEST: SCORE FOR SNP $snp_names->[$snp]: $score\n";
 	if(!defined($maxscore) || $score > $maxscore ||
 	   ($equal_chance && $score == $maxscore && rand() < $equal_chance))
@@ -2580,7 +2583,7 @@ sub getNextGreedySNP
 
             $greedymsg = "GREEDY ITERATION: [$greedy_sol_num]  SIZE: [" .
               (scalar(@$greedy_snp_candidates) + 1) .
-                "] SNP [$snp_names->[$optimized_snps->[$snp]->[0]]] IMPROVEMENT = $score.  " .
+                "] SNP [$snp_names->[$optimized_snps->[$snp]->[0]]] SCORE = $score.  " .
                   "MAX [$snp_names->[$optimized_snps->[$maxsnp]->[0]]] = $maxscore.\n"
 	  }
 #	else
@@ -2593,7 +2596,7 @@ sub getNextGreedySNP
 		scalar(@$greedy_snp_candidates) + 1,
 		"] ",
 		"SNP [$snp_names->[$optimized_snps->[$snp]->[0]]] ",
-		"IMPROVEMENT = $score.  ",
+		"SCORE = $score.  ",
 		"MAX [$snp_names->[$optimized_snps->[$maxsnp]->[0]]] = ",
 		"$maxscore.");
 
@@ -2640,13 +2643,14 @@ sub getRatioResolved
     my $label_array            = $_[2];  #Array of genome labels indexed by
                                          #genome
     my $relevant_genomes       = $_[3];  #Array of genome indexes to consider
-    my $counted_scores         = $_[4];  #genomes whose score "counts" will be
+    my $overall_score_flag     = $_[4];  #Return the score of the partial solution instead of the improvement score.  I added this to solve issues with negative scores being returned
+    my $counted_scores         = $_[5];  #genomes whose score "counts" will be
                                          #labelled in this array.  A genome
                                          #"counts", if it's been placed in a
                                          #real well because a SNP value put it
                                          #there (other than a dot).  This allows us to skip genomes which provide no information for the particular set of SNPs supplied UNTIL a real value is encountered.  It is assumed/guaranteed elsewhere that all genomes will have a value for at least one of the SNPs provided (if not, 0 is returned).  INTERNAL
                                          #USE ONLY.  DO NOT SUPPLY.
-    my $not_first_call         = $_[5];  #INTERNAL USE ONLY.  DO NOT SUPPLY.
+    my $not_first_call         = $_[6];  #INTERNAL USE ONLY.  DO NOT SUPPLY.
 
     my $going_to_recurse = scalar(@$proposed_solution);
 
@@ -2655,7 +2659,7 @@ sub getRatioResolved
     #If this is a recursive call and the well was empty, return 1
     if($not_first_call &&
        scalar(@$label_array) == 0)
-      {return(0)}
+      {return(wantarray ? (0,0) : 0)}
 
     if(!defined($counted_scores))
       {$counted_scores = [map {0} @$label_array]}
@@ -2956,27 +2960,37 @@ sub getRatioResolved
 	##
 
 	#Get the scores from the recursive call
-	my($dot_score,$a_score,$t_score,$g_score,$c_score,$gap_score);
+	my($dot_score,$dot_labels,$a_score,$a_labels,$t_score,$t_labels,$g_score,$g_labels,$c_score,$c_labels,$gap_score,$gap_labels);
 
-	if($label_counts->[0] &&
-	   $real_label_counts->[0] != $total_counts->[0])
-	  {$dot_score = getRatioResolved($proposed_solution,
-					 $snp_data_buffer,
-					 $new_label_array->[0],
-					 $new_relevant_genomes->[0],
-					 $new_counted_scores->[0],
-					 1)}
-	elsif($label_counts->[0] &&
-	      $total_counts->[0] == $real_label_counts->[0])
-	  {
-            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-            if(scalar(@$proposed_solution) > 1)
-              {$dot_score = 0}
-            else
-              {$dot_score = 1}
+        #If there were no labeled genomes in any of the other branches/wells (i.e. no other recursive calls will be made), go down this branch to separate the genomes further by the next SNP.  Otherwise, there's no need to traverse this branch in the computation, because the genomes here will travel with the other branches that have had genomes put in them.
+        if(scalar(grep {$_} @{$label_counts}[1..5]) == 0)
+          {
+            #$dot_labels = ($label_counts->[0] ? $label_counts->[0] : 1);
+	    if($label_counts->[0] &&
+	       $real_label_counts->[0] != $total_counts->[0])
+	      {#($dot_score,$dot_labels) = getRatioResolved($proposed_solution,
+               $dot_score = getRatioResolved($proposed_solution,
+					     $snp_data_buffer,
+					     $new_label_array->[0],
+					     $new_relevant_genomes->[0],
+                                             1,
+					     $new_counted_scores->[0],
+					     1)}
+	    elsif($label_counts->[0] &&
+	          $total_counts->[0] == $real_label_counts->[0])
+	      {
+                #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
+                if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
+                  {$dot_score = 0}
+                else
+                  #{$dot_score = $label_counts->[0]}
+                  {$dot_score = 1}
+              }
+	    else
+	      {$dot_score = 0}
           }
-	else
-	  {$dot_score = 0}
+        else
+          {$dot_score = 0}
 
 	#If there are any label or unlabel counts AND
 	#(there exists both real or unreal label counts AND
@@ -2986,16 +3000,18 @@ sub getRatioResolved
 	#are real-well genomes that have been added
 	#(Then the score must be further discerned recursively)
 
+        #$a_labels = ($label_counts->[1] ? $label_counts->[1] : 1);
 	#If (there are labelled genomes (real or unreal) OR
-	if(($label_counts->[1] ||
-	    #There are any real genomes (labelled OR unlabelled) AND
-	    #labelled unreal genomes) AND
-	    ($total_counts->[1] && $label_counts->[0])) &&
-	   #The number of real + unreal labelled genomes is not equal to...
-	   ($real_label_counts->[1] + $real_label_counts->[0]) !=
-	   #the total real + unreal genomes
-	   ($total_counts->[1] + $total_counts->[0]))
-	  {$a_score = getRatioResolved($proposed_solution,
+	if(1)#($label_counts->[1] ||
+	#    #There are any real genomes (labelled OR unlabelled) AND
+	#    #labelled unreal genomes) AND
+	#    ($total_counts->[1] && $label_counts->[0])) &&
+	#   #The number of real + unreal labelled genomes is not equal to...
+	#   ($real_label_counts->[1] + $real_label_counts->[0]) !=
+	#   #the total real + unreal genomes
+	#   ($total_counts->[1] + $total_counts->[0]))
+	  {#($a_score,$a_labels) = getRatioResolved($proposed_solution,
+           $a_score = getRatioResolved($proposed_solution,
 				       $snp_data_buffer,
 				       (scalar(@{$new_label_array->[1]}) &&
 					scalar(@{$new_label_array->[0]}) ?
@@ -3007,6 +3023,7 @@ sub getRatioResolved
 					[@{$new_relevant_genomes->[1]},
 					 @{$new_relevant_genomes->[0]}] :
 					$new_relevant_genomes->[1]),
+                                       1,
 				       (scalar(@{$new_label_array->[1]}) &&
 					scalar(@{$new_label_array->[0]}) ?
 					[@{$new_counted_scores->[1]},
@@ -3024,21 +3041,24 @@ sub getRatioResolved
 	      ($total_counts->[1] + $total_counts->[0]))
 	  {
             #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-            if(scalar(@$proposed_solution) > 1)
+            if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
               {$a_score = 0}
             else
               {$a_score = 1}
+              #{$a_score = $label_counts->[1]}
           }
 	#Otherwise the score is zero
 	else
 	  {$a_score = 0}
 
+        #$t_labels = ($label_counts->[2] ? $label_counts->[2] : 1);
 	#Same as above
-	if(($label_counts->[2] ||
-	    ($total_counts->[2] && $label_counts->[0])) &&
-	   ($real_label_counts->[2] + $real_label_counts->[0]) !=
-	   ($total_counts->[2] + $total_counts->[0]))
-	  {$t_score = getRatioResolved($proposed_solution,
+	if(1)#($label_counts->[2] ||
+	#    ($total_counts->[2] && $label_counts->[0])) &&
+	#   ($real_label_counts->[2] + $real_label_counts->[0]) !=
+	#   ($total_counts->[2] + $total_counts->[0]))
+	  {#($t_score,$t_labels) = getRatioResolved($proposed_solution,
+           $t_score = getRatioResolved($proposed_solution,
 				       $snp_data_buffer,
 				       (scalar(@{$new_label_array->[2]}) &&
 					scalar(@{$new_label_array->[0]}) ?
@@ -3050,6 +3070,7 @@ sub getRatioResolved
 					[@{$new_relevant_genomes->[2]},
 					 @{$new_relevant_genomes->[0]}] :
 					$new_relevant_genomes->[2]),
+                                       1,
 				       (scalar(@{$new_label_array->[2]}) &&
 					scalar(@{$new_label_array->[0]}) ?
 					[@{$new_counted_scores->[2]},
@@ -3062,20 +3083,23 @@ sub getRatioResolved
 	      ($total_counts->[2] + $total_counts->[0]))
 	  {
             #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-            if(scalar(@$proposed_solution) > 1)
+            if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
               {$t_score = 0}
             else
               {$t_score = 1}
+              #{$t_score = $label_counts->[2]}
           }
 	else
 	  {$t_score = 0}
 
+        #$g_labels = ($label_counts->[3] ? $label_counts->[3] : 1);
 	#Same as above
-	if(($label_counts->[3] ||
-	    ($total_counts->[3] && $label_counts->[0])) &&
-	   ($real_label_counts->[3] + $real_label_counts->[0]) !=
-	   ($total_counts->[3] + $total_counts->[0]))
-	  {$g_score = getRatioResolved($proposed_solution,
+	if(1)#($label_counts->[3] ||
+	#    ($total_counts->[3] && $label_counts->[0])) &&
+	#   ($real_label_counts->[3] + $real_label_counts->[0]) !=
+	#   ($total_counts->[3] + $total_counts->[0]))
+	  {#($g_score,$g_labels) = getRatioResolved($proposed_solution,
+           $g_score = getRatioResolved($proposed_solution,
 				       $snp_data_buffer,
 				       (scalar(@{$new_label_array->[3]}) &&
 					scalar(@{$new_label_array->[0]}) ?
@@ -3087,6 +3111,7 @@ sub getRatioResolved
 					[@{$new_relevant_genomes->[3]},
 					 @{$new_relevant_genomes->[0]}] :
 					$new_relevant_genomes->[3]),
+                                       1,
 				       (scalar(@{$new_label_array->[3]}) &&
 					scalar(@{$new_label_array->[0]}) ?
 					[@{$new_counted_scores->[3]},
@@ -3099,20 +3124,23 @@ sub getRatioResolved
 	      ($total_counts->[3] + $total_counts->[0]))
 	  {
             #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-            if(scalar(@$proposed_solution) > 1)
+            if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
               {$g_score = 0}
             else
               {$g_score = 1}
+              #{$g_score = $label_counts->[3]}
           }
 	else
 	  {$g_score = 0}
 
+        #$c_labels = ($label_counts->[4] ? $label_counts->[4] : 1);
 	#Same as above
-	if(($label_counts->[4] ||
-	    ($total_counts->[4] && $label_counts->[0])) &&
-	   ($real_label_counts->[4] + $real_label_counts->[0]) !=
-	   ($total_counts->[4] + $total_counts->[0]))
-	  {$c_score = getRatioResolved($proposed_solution,
+	if(1)#($label_counts->[4] ||
+	#    ($total_counts->[4] && $label_counts->[0])) &&
+	#   ($real_label_counts->[4] + $real_label_counts->[0]) !=
+	#   ($total_counts->[4] + $total_counts->[0]))
+	  {#($c_score,$c_labels) = getRatioResolved($proposed_solution,
+           $c_score = getRatioResolved($proposed_solution,
 				       $snp_data_buffer,
 				       (scalar(@{$new_label_array->[4]}) &&
 					scalar(@{$new_label_array->[0]}) ?
@@ -3124,6 +3152,7 @@ sub getRatioResolved
 					[@{$new_relevant_genomes->[4]},
 					 @{$new_relevant_genomes->[0]}] :
 					$new_relevant_genomes->[4]),
+                                       1,
 				       (scalar(@{$new_label_array->[4]}) &&
 					scalar(@{$new_label_array->[0]}) ?
 					[@{$new_counted_scores->[4]},
@@ -3136,20 +3165,23 @@ sub getRatioResolved
 	      ($total_counts->[4] + $total_counts->[0]))
 	  {
             #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-            if(scalar(@$proposed_solution) > 1)
+            if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
               {$c_score = 0}
             else
               {$c_score = 1}
+              #{$c_score = $label_counts->[4]}
           }
 	else
 	  {$c_score = 0}
 
+        #$gap_labels = ($label_counts->[5] ? $label_counts->[5] : 1);
 	#Same as above
-	if(($label_counts->[5] ||
-	    ($total_counts->[5] && $label_counts->[0])) &&
-	   ($real_label_counts->[5] + $real_label_counts->[0]) !=
-	   ($total_counts->[5] + $total_counts->[0]))
-	  {$gap_score = getRatioResolved($proposed_solution,
+	if(1)#($label_counts->[5] ||
+	#    ($total_counts->[5] && $label_counts->[0])) &&
+	#   ($real_label_counts->[5] + $real_label_counts->[0]) !=
+	#   ($total_counts->[5] + $total_counts->[0]))
+	  {#($gap_score,$gap_labels) = getRatioResolved($proposed_solution,
+           $gap_score = getRatioResolved($proposed_solution,
 					 $snp_data_buffer,
 					 (scalar(@{$new_label_array->[5]}) &&
 					  scalar(@{$new_label_array->[0]}) ?
@@ -3161,6 +3193,7 @@ sub getRatioResolved
 					  [@{$new_relevant_genomes->[5]},
 					   @{$new_relevant_genomes->[0]}] :
 					  $new_relevant_genomes->[5]),
+                                         1,
 					 (scalar(@{$new_label_array->[5]}) &&
 					  scalar(@{$new_label_array->[0]}) ?
 					  [@{$new_counted_scores->[5]},
@@ -3173,10 +3206,11 @@ sub getRatioResolved
 	      ($total_counts->[5] + $total_counts->[0]))
 	  {
             #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-            if(scalar(@$proposed_solution) > 1)
+            if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
               {$gap_score = 0}
             else
               {$gap_score = 1}
+              #{$gap_score = $label_counts->[5]}
           }
 	else
 	  {$gap_score = 0}
@@ -3186,8 +3220,9 @@ sub getRatioResolved
 	## scores
 	##
 
+#        my $failsafe = (($a_labels + $t_labels + $g_labels + $c_labels + $gap_labels) == 0 && ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 && $dot_labels == 0) || (scalar(grep {$_} @{$label_counts}[1..5]) > 0))  ? 1 : 0);
 	my $children_score = 0;
-	$children_score = ($dot_score * $label_counts->[0] +
+	$children_score = ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ? $dot_score : 0) * $label_counts->[0] +
 			   #Multiply the ratio of real isolated labelled counts
 			   $a_score *
 			   #by the total number of label counts that were put
@@ -3213,7 +3248,7 @@ sub getRatioResolved
 	   #Divide the number of isolated real labelled genomes above by the
 	   #total number of labelled genomes below to see how good the answer
 	   #at the lower level of the tree was
-	   ($label_counts->[0] +
+	   ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ? $label_counts->[0] : 0) +
 	    $label_counts->[1] +
 	    ($label_counts->[1] ? $label_counts->[0] : 0) +
 	    $label_counts->[2] +
@@ -3230,45 +3265,71 @@ sub getRatioResolved
 	      $label_counts->[3] ||
 	      $label_counts->[4] ||
 	      $label_counts->[5]);
+#	$children_score = ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ? $dot_score : 0) +
+#			   $a_score + $t_score + $g_score + $c_score + $gap_score) /
+#	   #Divide the number of isolated real labelled genomes above by the
+#	   #total number of labelled genomes below to see how good the answer
+#	   #at the lower level of the tree was
+#	   ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ? $dot_labels : 0) +
+#	    $a_labels + $t_labels + $g_labels + $c_labels + $gap_labels + $failsafe)
+#	   if($label_counts->[0] ||
+#	      $label_counts->[1] ||
+#	      $label_counts->[2] ||
+#	      $label_counts->[3] ||
+#	      $label_counts->[4] ||
+#	      $label_counts->[5]);
 
 	#If we're one step up from the leaves, calculate the improvement of the
 	#score that the last SNP added to the previous solution (Note that the
 	#score of the first SNP is the improvement from a score of 0 without
 	#this calculation)
-	if(scalar(@$proposed_solution) == 1)
+	if(!$overall_score_flag && scalar(@$proposed_solution) == 1)
 	  {
 	    ##
 	    ## Calculate the score at one step up from the leaves, calling it
 	    ## the "parents_score"
 	    ##
 
-	    my $parents_score = $label_counts->[0] *
-	      ($real_label_counts->[0] ?
-	       ($real_label_counts->[0] / $total_counts->[0]) : 0);
-	    my $parents_total = $label_counts->[0];
+            my $parents_score = 0;
+            my $parents_total = 0;
+            if(scalar(grep {$_} @{$label_counts}[1..5]) == 0)
+              {
+                $parents_score = $label_counts->[0] *
+                  ($label_counts->[0] / $total_counts->[0]);
+                $parents_total = $label_counts->[0];
+              }
+            else
+              {
+#	    my $parents_score = $label_counts->[0] *
+#	      ($real_label_counts->[0] ?
+#	       ($label_counts->[0] / $total_counts->[0]) : 0);
+#	    my $parents_total = $label_counts->[0];
 #print STDERR "\nTHERE ARE ",scalar(@$label_array)," GENOMES BEING ANALYZED\n";
 #print STDERR "TEST: PARENT'S WELL 0 CONTAINS $real_label_counts->[0] REAL LABELLED GENOMES AND $label_counts->[0] TOTAL LABELLED AND $total_counts->[0] TOTAL GENOMES\n";
-	    foreach my $well (1..5)
-	      {
-		#Add the total label counts for this well and the pseudowell
-		#multiplied by their ratio of the total number of counts that
-		#were "real" over the total overall counts.  By real, I mean
-		#that a genome in a well was added because of a real SNP value
-		#and not by a pseudowell
-		$parents_score +=
-		  ($label_counts->[$well] + $label_counts->[0]) *
-		    (($real_label_counts->[$well] + $real_label_counts->[0]) /
-		     ($total_counts->[$well] + $total_counts->[0]))
-		      #Only count these calculations if there are labelled
-		      #genomes present in the well
-		      if($label_counts->[$well]);
+	        foreach my $well (1..5)
+	          {
+		    #Add the total label counts for this well and the pseudowell
+		    #multiplied by their ratio of the total number of counts that
+		    #were "real" over the total overall counts.  By real, I mean
+		    #that a genome in a well was added because of a real SNP value
+		    #and not by a pseudowell
+                    #5/26/2011 - I took out the "real" thing because I think it is inflating the returned scores.  By only including the reals, the unreal ones, yet unresolved start to appear resolved in the parent nodes of the solution, but they were included in the children nodes and could essentially make the solution worse than the parent inadvertently, potentially leading to negative improvement scores.
+		    $parents_score +=
+		      ($label_counts->[$well] + $label_counts->[0]) *
+		        (($label_counts->[$well] + $label_counts->[0]) /
+		         ($total_counts->[$well] + $total_counts->[0]))
+#		          #Only count these calculations if there are labelled
+#		          #genomes present in the well
+#		          if($label_counts->[$well]);
+                          if($total_counts->[$well] || $total_counts->[0]);
 
-		#Subtract .5 from the larger of the count ratios for this well
-		#(labelled vs. unlabelled counts, because the lowest score is
-		#.5 and the largest is 1) and multiply by two to get a score
-		#between 0 and 1 and then multiply by the number of genomes in
-		#this well (to ultimately be divided by the total number of
-		#genomes in all wells)
+
+#		#Subtract .5 from the larger of the count ratios for this well
+#		#(labelled vs. unlabelled counts, because the lowest score is
+#		#.5 and the largest is 1) and multiply by two to get a score
+#		#between 0 and 1 and then multiply by the number of genomes in
+#		#this well (to ultimately be divided by the total number of
+#		#genomes in all wells)
 #		  ((($label_counts->[$well] > $unlabel_counts->[$well] ?
 #		     $label_counts->[$well] : $unlabel_counts->[$well]) /
 #		    ($label_counts->[$well] || $unlabel_counts->[$well] ?
@@ -3276,12 +3337,15 @@ sub getRatioResolved
 #		   - .5) * 2 *
 #		     ($label_counts->[$well] + $unlabel_counts->[$well]);
 
-		#Add to the total if genomes in the real well exist
-		$parents_total += $label_counts->[$well] + $label_counts->[0]
-		  if($label_counts->[$well]);
+		    #Add to the total if genomes in the real well exist
+		    $parents_total += $label_counts->[$well] + $label_counts->[0]
+#		      if($label_counts->[$well]);
+                      ;
+
 #		  $label_counts->[$well] + $unlabel_counts->[$well];
 #print STDERR "TEST: PARENT'S WELL $well CONTAINS $real_label_counts->[$well] REAL LABELLED GENOMES AND $label_counts->[$well] TOTAL LABELLED AND $total_counts->[$well] TOTAL GENOMES\n";
-	      }
+	          }
+              }
 
 	    #Normalize the score using the total number of genomes in all wells
 	    $parents_score /= $parents_total
@@ -3295,18 +3359,47 @@ sub getRatioResolved
 	    #unresolved in this parent node.  Theoretically, this should not be
 	    #greater than 1 or less than 0
 #print STDERR ("\nTEST: CHILDREN SCORE: $children_score PARENT SCORE: $parents_score FOR CHILD SNP [$snp_names->[$snp]] AND PARENT SNP: [$snp_names->[$proposed_solution->[-1]]] TOTAL SOLUTION SIZE: [",scalar(@$proposed_solution)+1,"]\n");
-	    my $improvement = ($children_score == $parents_score &&
+	    my $improvement = ($children_score == $parents_score ||
 			       $parents_score == 1 ? 0 :
 			       (($children_score - $parents_score) /
 				(1 - $parents_score)));
-#print STDERR ("\nTEST: CHILDREN SCORE: $children_score PARENT SCORE: $parents_score IMPROVEMENT: $improvement FOR LAST 2 SNPs [$snp_names->[$snp],$snp_names->[$proposed_solution->[0]]]\n") if($improvement < 0);
-	    return($improvement);
+#print STDERR ("\nTEST: CHILDREN SCORE: $children_score PARENT SCORE: $parents_score IMPROVEMENT: $improvement FOR LAST 2 SNPs [$snp_names->[$snp],$snp_names->[$proposed_solution->[0]]]\ndot score $dot_score dot labels $label_counts->[0] dot total $total_counts->[0]\na score $a_score a labels $label_counts->[1] a total $total_counts->[1]\nt score $t_score t labels $label_counts->[2] t total $total_counts->[2]\ng score $g_score g labels $label_counts->[3] g total $total_counts->[3]\nc score $c_score c labels $label_counts->[4] c total $total_counts->[4]\ngap score $gap_score gap labels $label_counts->[5] gap total $total_counts->[5]\n") if($improvement < 0);
+if($improvement < 0)
+{
+            my $parents_score = 0;
+            my $parents_total = 0;
+            if($total_counts->[0] && scalar(grep {$_} @{$label_counts}[1..5]) == 0)
+              {
+                $parents_score = $label_counts->[0] *
+                  ($label_counts->[0] / $total_counts->[0]);
+                $parents_total = $label_counts->[0];
+#print STDERR "SET parents score to $parents_score and total to $parents_total because there were no labeled genomes in the non-dot wells.  (Should not happen)\n";
+              }
+            foreach my $well (1..5)
+              {
+#print STDERR ("WELL: $well ",'$parents_score'," += ($label_counts->[$well] + $label_counts->[0]) * (($label_counts->[$well] + $label_counts->[0]) / ($total_counts->[$well] + $total_counts->[0])) if($label_counts->[$well]);\n");
+                $parents_score +=
+                  ($label_counts->[$well] + $label_counts->[0]) *
+                    (($label_counts->[$well] + $label_counts->[0]) /
+                     ($total_counts->[$well] + $total_counts->[0]))
+                      #Only count these calculations if there are labelled
+                      #genomes present in the well
+#                      if($label_counts->[$well]);
+                      if($total_counts->[$well] || $total_counts->[0]);
+
+#print STDERR ('$parents_total'," += $label_counts->[$well] + $label_counts->[0] if($label_counts->[$well]);\n");
+                $parents_total += $label_counts->[$well] + $label_counts->[0]
+                  if($label_counts->[$well]);
+              }
+
+}
+	    return(wantarray ? ($improvement,1) : $improvement);
 	  }
 	else
 	  #Return the children score
 	  {
-#print STDERR "\nTEST: RETURNING AVERAGED CHILDREN SCORES: [$children_score] FROM THESE CHILD SCORES: [$dot_score] [$a_score] [$t_score] [$g_score] [$c_score] [$gap_score]\n";
-return($children_score)}
+print STDERR "\nTEST: RETURNING AVERAGED CHILDREN SCORES: [$children_score] FROM THESE CHILD SCORES: [$dot_score] [$a_score] [$t_score] [$g_score] [$c_score] [$gap_score]\n" if($children_score < 0 || $children_score > 1);
+return(wantarray ? ($children_score,1) : $children_score)}
       }
     else
       {
@@ -3316,46 +3409,70 @@ return($children_score)}
 	## last level of recursion
 	##
 
-	my $score = $label_counts->[0] *
-	  ($real_label_counts->[0] ?
-	   ($real_label_counts->[0] / ($total_counts->[0])) : 0);
-	my $total = $label_counts->[0];
-        foreach my $well (1..5)
-	  {
-	    #Add the total label counts for this well and the pseudowell
-	    #multiplied by their ratio of the total number of counts
-	    $score +=
-	      #Don't need to test the real well because that's done at the
-	      #if at the end of this equation
-	      ($label_counts->[$well] + $label_counts->[0]) *
-		(($real_label_counts->[$well] + $real_label_counts->[0]) /
-		 ($total_counts->[$well] + $total_counts->[0]))
-		  if($label_counts->[$well]);
+        my $score = 0;
+#        my $total = 0;
+        my $total = $label_counts->[0];
+        if($total_counts->[0] && scalar(grep {$_} @{$label_counts}[1..5]) == 0)
+          {
+            $score = $label_counts->[0] *
+              ($label_counts->[0] / $total_counts->[0]);
+#            $total = $label_counts->[0];
+          }
+        else
+          {
+#	my $score = $label_counts->[0] *
+#	  ($real_label_counts->[0] ?
+#	   ($label_counts->[0] / ($total_counts->[0])) : 0);
+#	my $total = $label_counts->[0];
+            foreach my $well (1..5)
+	      {
+	        #Add the total label counts for this well and the pseudowell
+	        #multiplied by their ratio of the total number of counts
+	        $score +=
+	          #Don't need to test the real well because that's done at the
+	          #if at the end of this equation
+	          $label_counts->[$well] *
+		    ($label_counts->[$well] /
+		     ($total_counts->[$well] +
+		      #Penalize the score by adding the number of
+		      #unlabeled genomes in the dot well to the total
+                      ($total_counts->[0] - $label_counts->[0])))
+		      if($total_counts->[$well]);
+#	          ($label_counts->[$well] + $label_counts->[0]) *
+#		    (($label_counts->[$well] + $label_counts->[0]) /
+#		     ($total_counts->[$well] + $total_counts->[0]))
+##		      if($label_counts->[$well]);
+#                      if($total_counts->[$well] || $total_counts->[0]);
 
-	    #Subtract .5 from the larger of the count ratios for this well
-	    #(labelled vs. unlabelled counts, because the lowest score is
-	    #.5 and the largest is 1) and multiply by two to get a score
-	    #between 0 and 1 and then multiply by the number of genomes in
-	    #this well (to ultimately be divided by the total number of
-	    #genomes in all wells)
+#	    #Subtract .5 from the larger of the count ratios for this well
+#	    #(labelled vs. unlabelled counts, because the lowest score is
+#	    #.5 and the largest is 1) and multiply by two to get a score
+#	    #between 0 and 1 and then multiply by the number of genomes in
+#	    #this well (to ultimately be divided by the total number of
+#	    #genomes in all wells)
 #	      ((($label_counts->[$well] > $unlabel_counts->[$well] ?
 #		 $label_counts->[$well] : $unlabel_counts->[$well]) /
 #		($label_counts->[$well] || $unlabel_counts->[$well] ?
 #		 ($label_counts->[$well] + $unlabel_counts->[$well]) : 1)) -
 #	       .5) * 2 * ($label_counts->[$well] + $unlabel_counts->[$well]);
 
-	    $total += $label_counts->[$well] + $label_counts->[0]
-	      if($label_counts->[$well]);
+print STDERR ("WELL $well HAS $label_counts->[$well]  REAL AND $label_counts->[0] FAKE LABELED GENOMES AND $total_counts->[$well] + $total_counts->[0] TOTAL GENOMES\n") if($snp_names->[$snp] eq "16.69397102.69409491");
+#	        $total += $label_counts->[$well] + $label_counts->[0]
+##	          if($label_counts->[$well]);
+#                  ;
+	        $total += $label_counts->[$well];
 
 #	      $label_counts->[$well] + $unlabel_counts->[$well];
-	  }
-#print STDERR "\nNUMBER RESOLVED AT LEAF: [$score] OUT OF: [$total]\n";
+	      }
+          }
+print STDERR "\nNUMBER RESOLVED for SNP $snp_names->[$snp]: [$score] OUT OF: [$total]\n" if($snp_names->[$snp] eq "16.69397102.69409491");
 	#Normalize the score using the total number of genomes in all wells
-	$score /= $total
+        my $normal_score = 0;
+	$normal_score = $score / $total
 	  if($total);
 
 	#Return the leaves' score
-	return($score);
+	return(wantarray ? ($score,$total) : $normal_score);
       }
   }
 
