@@ -56,8 +56,8 @@ my($treefile,$snpfile,$verbose,$max_set_size_per_node,$help,$tree,$label_array,
    $min_num_solns_per_node,$breadth_first_order,$reverse_order,
    $skip_input_check,$internal_nodes_only,$leaves_only,@analyze_nodes,
    $min_set_size_per_node,$low_memory_mode,$greedy_flag,$max_greedies,
-   $quality_ratio,$equal_chance,$min_indep_solns_per_node,$start_cutoff_size
-  );
+   $quality_ratio,$equal_chance,$min_indep_solns_per_node,$start_cutoff_size);
+my $overwrite_flag = 0;
 my $quiet = 0;
 my $preserve_args = [@ARGV];
 
@@ -86,6 +86,7 @@ GetOptions('t|treefile=s'            => \$treefile,
 	   'e|leaves-only!'          => \$leaves_only,
            'g|greedy!'               => \$greedy_flag,
            'partial-suffix=s'        => \$partial_suffix,
+	   'overwrite!'              => \$overwrite_flag,
            'x|max-greedies=s'        => \$max_greedies,
            'u|quality-ratio=s'       => \$quality_ratio,
 	   'c|chance=s'              => \$equal_chance,
@@ -179,7 +180,7 @@ my $optimized_snps = optimizeSNPs($snp_names,$genome_names,$snp_data_buffer);
 #Prepare output for partial solutions generated from greedy set building
 if($greedy_flag && $partial_suffix ne '')
   {
-    if(-e "$snpfile$partial_suffix")
+    if(!$overwrite_flag && -e "$snpfile$partial_suffix")
       {error("File exists: [$snpfile$partial_suffix].  Greedy output going to STDERR")}
     else
       {
@@ -1482,7 +1483,7 @@ sub LoadSNPs
 	  {
 	    #Error check the first line
 	    my @errors =
-	      (grep {$_ !~ /^(\D*\d+\D*|\d*|\d+\D.*)$/} split(/\s+/,$curline));
+	      (grep {$_ !~ /^(\D*\d+\D*|\d+\D.*)$/} split(/\s+/,$curline));
 	    if($framesort && scalar(@errors))
 	      {
                error("Invalid SNP names: [@errors] on the first line: ",
@@ -1879,6 +1880,12 @@ CLUSTER USAGE: See the "HOW TO PARALLELIZE SNPSTI" section of the --help output.
                     means that the first best SNP encountered will be added to
                     the greedy solution.  A value of one means that the last
                     best SNP encountered will always be added to the solution.
+
+
+     --partial-suffix  OPTIONAL [.prtl] Suffix to be appended to input file for
+                                storing partial greedy solutions.
+     --overwrite       OPTIONAL [Off] Overwrite existing partial greedy
+                                solutions files.
 end
   }
 
@@ -2558,6 +2565,8 @@ sub getNextGreedySNP
     my $greedy_pool_index = 0;
     my $max_index = 0;
     my $greedymsg = '';
+    my $prtl_soln_tree = tree->new('GREEDY ITER ' . $greedy_sol_num . ' SIZE '
+				   . (scalar(@$greedy_snp_candidates) + 1));
     foreach my $snp (@$greedy_snp_pool)
       {
 #print STDERR "TEST GREEDILY EVALUATING SNP: $snp WITH CANDIDATES: @$greedy_snp_candidates\n";
@@ -2567,7 +2576,8 @@ sub getNextGreedySNP
 				   [$optimized_snps->[$snp]->[0]]),
 				  $snp_data_buffer,
 				  $label_array,
-				  $relevant_genomes,1);
+				  $relevant_genomes,
+				  1);
 #print STDERR "TEST: SCORE FOR SNP $snp_names->[$snp]: $score\n";
 	if(!defined($maxscore) || $score > $maxscore ||
 	   ($equal_chance && $score == $maxscore && rand() < $equal_chance))
@@ -2613,9 +2623,23 @@ sub getNextGreedySNP
 	  }
       }
 
+    #This call is purely just to get the $prtl_soln_tree filled in
+    getRatioResolved((scalar(@$greedy_snp_candidates) ?
+		      [map {$optimized_snps->[$_]->[0]}
+		       (@$greedy_snp_candidates,$maxsnp)] :
+		      [$optimized_snps->[$maxsnp]->[0]]),
+		     $snp_data_buffer,
+		     $label_array,
+		     $relevant_genomes,
+		     1,
+		     $prtl_soln_tree);
+
     if($partial_suffix ne '')
       {
         print PRTL $greedymsg;
+	my $handle = select(PRTL);
+	$prtl_soln_tree->printTree();
+	select($handle);
       }
 
 #    #Only use the temporary pool if it has all the SNPs in it (i.e. didn't sto
@@ -2644,14 +2668,17 @@ sub getRatioResolved
                                          #genome
     my $relevant_genomes       = $_[3];  #Array of genome indexes to consider
     my $overall_score_flag     = $_[4];  #Return the score of the partial solution instead of the improvement score.  I added this to solve issues with negative scores being returned
-    my $counted_scores         = $_[5];  #genomes whose score "counts" will be
+    my $prtl_soln_tree         = $_[5];
+    my $counted_scores         = $_[6];  #genomes whose score "counts" will be
                                          #labelled in this array.  A genome
                                          #"counts", if it's been placed in a
                                          #real well because a SNP value put it
                                          #there (other than a dot).  This allows us to skip genomes which provide no information for the particular set of SNPs supplied UNTIL a real value is encountered.  It is assumed/guaranteed elsewhere that all genomes will have a value for at least one of the SNPs provided (if not, 0 is returned).  INTERNAL
                                          #USE ONLY.  DO NOT SUPPLY.
-    my $not_first_call         = $_[6];  #INTERNAL USE ONLY.  DO NOT SUPPLY.
+    my $not_first_call         = $_[7];  #INTERNAL USE ONLY.  DO NOT SUPPLY.
 
+    my $do_soln_tree = (defined($prtl_soln_tree) &&
+			ref($prtl_soln_tree) eq 'tree' ? 1 : 0);
     my $going_to_recurse = scalar(@$proposed_solution);
 
 #print STDERR "TEST: PARAMS SENT IN: SNPS: [$snp,",join(',',@$proposed_solution),"] SIZE OF SNP DATA BUFFER: ",scalar(@$snp_data_buffer)," LABELS: [@$label_array]\n";
@@ -2659,7 +2686,19 @@ sub getRatioResolved
     #If this is a recursive call and the well was empty, return 1
     if($not_first_call &&
        scalar(@$label_array) == 0)
-      {return(wantarray ? (0,0) : 0)}
+      {
+	if($do_soln_tree)
+	  {
+	    #We'll add the unlabeled genomes directly under this branch because
+	    #the values for the current SNP do not matter since it's already
+	    #completely resolved from here
+	    foreach my $genom (map {'- ' . $genome_names->[$_]}
+			       @$relevant_genomes)
+	      {$prtl_soln_tree->addChild(tree->new($genom))}
+	  }
+
+	return(wantarray ? (0,0) : 0);
+      }
 
     if(!defined($counted_scores))
       {$counted_scores = [map {0} @$label_array]}
@@ -2766,8 +2805,8 @@ sub getRatioResolved
 #		    $unlabel_counts->[5]++;
 #		  }
 
-	    if($going_to_recurse)
-	      {
+#	    if($going_to_recurse)
+#	      {
 		#Push the current genome's SNP data and labels into the dot
 		#well
 #		push(@{$genome_wells->[0]},
@@ -2778,7 +2817,7 @@ sub getRatioResolved
 		     $relevant_genomes->[$relevant_genome_index]);
 		push(@{$new_counted_scores->[0]},
 		     $counted_scores->[$relevant_genome_index]);
-	      }
+#	      }
 	  }
 	else
 	  {
@@ -2798,8 +2837,8 @@ sub getRatioResolved
 		  }
 		$total_counts->[1]++;
 
-		if($going_to_recurse)
-		  {
+#		if($going_to_recurse)
+#		  {
 		    #Push the current genome's SNP data and labels into the A
 		    #well
 #		    push(@{$genome_wells->[1]},
@@ -2809,7 +2848,7 @@ sub getRatioResolved
 		    push(@{$new_relevant_genomes->[1]},
 			 $relevant_genomes->[$relevant_genome_index]);
 		    push(@{$new_counted_scores->[1]},1);
-		  }
+#		  }
 	      }
 
 	    #If the first snp value from the proposed solution contains a T or
@@ -2826,8 +2865,8 @@ sub getRatioResolved
 		  }
 		$total_counts->[2]++;
 
-		if($going_to_recurse)
-		  {
+#		if($going_to_recurse)
+#		  {
 		    #Push the current genome's SNP data and labels into the T
 		    #well
 #		    push(@{$genome_wells->[2]},
@@ -2837,7 +2876,7 @@ sub getRatioResolved
 		    push(@{$new_relevant_genomes->[2]},
 			 $relevant_genomes->[$relevant_genome_index]);
 		    push(@{$new_counted_scores->[2]},1);
-		  }
+#		  }
 	      }
 
 	    #If the first snp value from the proposed solution contains a G or
@@ -2854,8 +2893,8 @@ sub getRatioResolved
 		  }
 		$total_counts->[3]++;
 
-		if($going_to_recurse)
-		  {
+#		if($going_to_recurse)
+#		  {
 		    #Push the current genome's SNP data and labels into the G
 		    #well
 #		    push(@{$genome_wells->[3]},
@@ -2866,7 +2905,7 @@ sub getRatioResolved
 			 $relevant_genomes->[$relevant_genome_index]);
 		    push(@{$new_counted_scores->[3]},1);
 		  }
-	      }
+#	      }
 
 	    #If the first snp value from the proposed solution contains a C or
 	    #4 for this genome
@@ -2882,8 +2921,8 @@ sub getRatioResolved
 		  }
 		$total_counts->[4]++;
 
-		if($going_to_recurse)
-		  {
+#		if($going_to_recurse)
+#		  {
 		    #Push the current genome's SNP data and labels into the C
 		    #well
 #		    push(@{$genome_wells->[4]},
@@ -2893,7 +2932,7 @@ sub getRatioResolved
 		    push(@{$new_relevant_genomes->[4]},
 			 $relevant_genomes->[$relevant_genome_index]);
 		    push(@{$new_counted_scores->[4]},1);
-		  }
+#		  }
 	      }
 
 	    #If the first snp value from the proposed solution contains a gap
@@ -2910,8 +2949,8 @@ sub getRatioResolved
 		  }
 		$total_counts->[5]++;
 
-		if($going_to_recurse)
-		  {
+#		if($going_to_recurse)
+#		  {
 		    #Push the current genome's SNP data and labels into the gap
 		    #(-) well
 #		    push(@{$genome_wells->[5]},
@@ -2921,7 +2960,7 @@ sub getRatioResolved
 		    push(@{$new_relevant_genomes->[5]},
 			 $relevant_genomes->[$relevant_genome_index]);
 		    push(@{$new_counted_scores->[5]},1);
-		  }
+#		  }
 	      }
 	  }
 
@@ -2952,6 +2991,30 @@ sub getRatioResolved
 	exit(8);
       }
 
+    #Add nodes to the solution tree
+    my($dot_node,$a_node,$t_node,$g_node,$c_node,$gap_node);
+    if($do_soln_tree)
+      {
+	$dot_node = tree->new($snp_names->[$snp] . ": no data ($label_counts->[0]/$total_counts->[0])");
+	$a_node   = tree->new($snp_names->[$snp] . ": A (real: $label_counts->[1]/$total_counts->[1], no data: $label_counts->[0]/$total_counts->[0])");
+	$t_node   = tree->new($snp_names->[$snp] . ": T (real: $label_counts->[2]/$total_counts->[2], no data: $label_counts->[0]/$total_counts->[0])");
+	$g_node   = tree->new($snp_names->[$snp] . ": G (real: $label_counts->[3]/$total_counts->[3], no data: $label_counts->[0]/$total_counts->[0])");
+	$c_node   = tree->new($snp_names->[$snp] . ": C (real: $label_counts->[4]/$total_counts->[4], no data: $label_counts->[0]/$total_counts->[0])");
+	$gap_node = tree->new($snp_names->[$snp] . ": gap (real: $label_counts->[5]/$total_counts->[5], no data: $label_counts->[0]/$total_counts->[0])");
+	if($total_counts->[0])
+	  {$prtl_soln_tree->addChild($dot_node)}
+	if($total_counts->[1])
+	  {$prtl_soln_tree->addChild($a_node)}
+	if($total_counts->[2])
+	  {$prtl_soln_tree->addChild($t_node)}
+	if($total_counts->[3])
+	  {$prtl_soln_tree->addChild($g_node)}
+	if($total_counts->[4])
+	  {$prtl_soln_tree->addChild($c_node)}
+	if($total_counts->[5])
+	  {$prtl_soln_tree->addChild($gap_node)}
+      }
+
     #If we're not at the end of the solution
     if(scalar(@$proposed_solution))
       {
@@ -2960,7 +3023,8 @@ sub getRatioResolved
 	##
 
 	#Get the scores from the recursive call
-	my($dot_score,$dot_labels,$a_score,$a_labels,$t_score,$t_labels,$g_score,$g_labels,$c_score,$c_labels,$gap_score,$gap_labels);
+	my($dot_score,$dot_labels,$a_score,$a_labels,$t_score,$t_labels,
+	   $g_score,$g_labels,$c_score,$c_labels,$gap_score,$gap_labels);
 
         #If there were no labeled genomes in any of the other branches/wells (i.e. no other recursive calls will be made), go down this branch to separate the genomes further by the next SNP.  Otherwise, there's no need to traverse this branch in the computation, because the genomes here will travel with the other branches that have had genomes put in them.
         if(scalar(grep {$_} @{$label_counts}[1..5]) == 0)
@@ -2969,16 +3033,30 @@ sub getRatioResolved
 	    if($label_counts->[0] &&
 	       $real_label_counts->[0] != $total_counts->[0])
 	      {#($dot_score,$dot_labels) = getRatioResolved($proposed_solution,
-               $dot_score = getRatioResolved($proposed_solution,
-					     $snp_data_buffer,
-					     $new_label_array->[0],
-					     $new_relevant_genomes->[0],
-                                             1,
-					     $new_counted_scores->[0],
-					     1)}
+		$dot_score = getRatioResolved($proposed_solution,
+					      $snp_data_buffer,
+					      $new_label_array->[0],
+					      $new_relevant_genomes->[0],
+					      $overall_score_flag,
+					      $dot_node,
+					      $new_counted_scores->[0],
+					      1);
+	      }
 	    elsif($label_counts->[0] &&
 	          $total_counts->[0] == $real_label_counts->[0])
 	      {
+		if($do_soln_tree)
+		  {
+		    #Add genomes to the solution tree for partial solution
+		    #output
+		    foreach my $genom
+		      (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			      $genome_names->[$new_relevant_genomes
+					      ->[0]->[$_]]}
+		       (0..$#{$new_relevant_genomes->[0]}))
+			{$dot_node->addChild(tree->new($genom))}
+		  }
+
                 #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
                 if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
                   {$dot_score = 0}
@@ -2987,10 +3065,37 @@ sub getRatioResolved
                   {$dot_score = 1}
               }
 	    else
-	      {$dot_score = 0}
+	      {
+		if($do_soln_tree)
+		  {
+		    #Add genomes to the solution tree for partial solution
+		    #output
+		    foreach my $genom
+		      (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			      $genome_names->[$new_relevant_genomes
+					      ->[0]->[$_]]}
+		       (0..$#{$new_relevant_genomes->[0]}))
+			{$dot_node->addChild(tree->new($genom))}
+		  }
+
+		$dot_score = 0;
+	      }
           }
         else
-          {$dot_score = 0}
+          {
+	    if($do_soln_tree)
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$dot_node->addChild(tree->new($genom))}
+	      }
+
+	    $dot_score = 0;
+	  }
 
 	#If there are any label or unlabel counts AND
 	#(there exists both real or unreal label counts AND
@@ -3023,14 +3128,15 @@ sub getRatioResolved
 					[@{$new_relevant_genomes->[1]},
 					 @{$new_relevant_genomes->[0]}] :
 					$new_relevant_genomes->[1]),
-                                       1,
+                                       $overall_score_flag,
+				       $a_node,
 				       (scalar(@{$new_label_array->[1]}) &&
 					scalar(@{$new_label_array->[0]}) ?
 					[@{$new_counted_scores->[1]},
 					 @{$new_counted_scores->[0]}] :
 					$new_counted_scores->[1]),
 				       1)}
-	#Esle if (there are labelled genomes (real or unreal) OR
+	#Else if (there are labelled genomes (real or unreal) OR
 	elsif(($label_counts->[1] ||
 	       #There are any real genomes (labelled OR unlabelled) AND
 	       #labelled unreal genomes) AND
@@ -3040,6 +3146,23 @@ sub getRatioResolved
 	      #the total real + unreal genomes
 	      ($total_counts->[1] + $total_counts->[0]))
 	  {
+	    if($do_soln_tree)
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[1]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[1]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[1]}))
+		  {$a_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$a_node->addChild(tree->new($genom))}
+	      }
+
             #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
             if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
               {$a_score = 0}
@@ -3049,7 +3172,26 @@ sub getRatioResolved
           }
 	#Otherwise the score is zero
 	else
-	  {$a_score = 0}
+	  {
+	    if($do_soln_tree)
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[1]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[1]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[1]}))
+		  {$a_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$a_node->addChild(tree->new($genom))}
+	      }
+
+	    $a_score = 0;
+	  }
 
         #$t_labels = ($label_counts->[2] ? $label_counts->[2] : 1);
 	#Same as above
@@ -3070,7 +3212,8 @@ sub getRatioResolved
 					[@{$new_relevant_genomes->[2]},
 					 @{$new_relevant_genomes->[0]}] :
 					$new_relevant_genomes->[2]),
-                                       1,
+                                       $overall_score_flag,
+				       $t_node,
 				       (scalar(@{$new_label_array->[2]}) &&
 					scalar(@{$new_label_array->[0]}) ?
 					[@{$new_counted_scores->[2]},
@@ -3082,6 +3225,23 @@ sub getRatioResolved
 	      ($real_label_counts->[2] + $real_label_counts->[0]) ==
 	      ($total_counts->[2] + $total_counts->[0]))
 	  {
+	    if($do_soln_tree)
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[2]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[2]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[2]}))
+		    {$t_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$t_node->addChild(tree->new($genom))}
+	      }
+
             #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
             if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
               {$t_score = 0}
@@ -3090,7 +3250,26 @@ sub getRatioResolved
               #{$t_score = $label_counts->[2]}
           }
 	else
-	  {$t_score = 0}
+	  {
+	    if($do_soln_tree)
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[2]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[2]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[2]}))
+		    {$t_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$t_node->addChild(tree->new($genom))}
+	      }
+
+	    $t_score = 0;
+	  }
 
         #$g_labels = ($label_counts->[3] ? $label_counts->[3] : 1);
 	#Same as above
@@ -3111,7 +3290,8 @@ sub getRatioResolved
 					[@{$new_relevant_genomes->[3]},
 					 @{$new_relevant_genomes->[0]}] :
 					$new_relevant_genomes->[3]),
-                                       1,
+                                       $overall_score_flag,
+				       $g_node,
 				       (scalar(@{$new_label_array->[3]}) &&
 					scalar(@{$new_label_array->[0]}) ?
 					[@{$new_counted_scores->[3]},
@@ -3123,6 +3303,23 @@ sub getRatioResolved
 	      ($real_label_counts->[3] + $real_label_counts->[0]) ==
 	      ($total_counts->[3] + $total_counts->[0]))
 	  {
+	    if($do_soln_tree)
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[3]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[3]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[3]}))
+		    {$g_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$g_node->addChild(tree->new($genom))}
+	      }
+
             #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
             if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
               {$g_score = 0}
@@ -3131,7 +3328,26 @@ sub getRatioResolved
               #{$g_score = $label_counts->[3]}
           }
 	else
-	  {$g_score = 0}
+	  {
+	    if($do_soln_tree)
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[3]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[3]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[3]}))
+		    {$g_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$g_node->addChild(tree->new($genom))}
+	      }
+
+	    $g_score = 0;
+	  }
 
         #$c_labels = ($label_counts->[4] ? $label_counts->[4] : 1);
 	#Same as above
@@ -3152,7 +3368,8 @@ sub getRatioResolved
 					[@{$new_relevant_genomes->[4]},
 					 @{$new_relevant_genomes->[0]}] :
 					$new_relevant_genomes->[4]),
-                                       1,
+                                       $overall_score_flag,
+				       $c_node,
 				       (scalar(@{$new_label_array->[4]}) &&
 					scalar(@{$new_label_array->[0]}) ?
 					[@{$new_counted_scores->[4]},
@@ -3164,6 +3381,23 @@ sub getRatioResolved
 	      ($real_label_counts->[4] + $real_label_counts->[0]) ==
 	      ($total_counts->[4] + $total_counts->[0]))
 	  {
+	    if($do_soln_tree)
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[4]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[4]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[4]}))
+		    {$c_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$c_node->addChild(tree->new($genom))}
+	      }
+
             #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
             if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
               {$c_score = 0}
@@ -3172,7 +3406,26 @@ sub getRatioResolved
               #{$c_score = $label_counts->[4]}
           }
 	else
-	  {$c_score = 0}
+	  {
+	    if($do_soln_tree)
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[4]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[4]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[4]}))
+		    {$c_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$c_node->addChild(tree->new($genom))}
+	      }
+
+	    $c_score = 0;
+	  }
 
         #$gap_labels = ($label_counts->[5] ? $label_counts->[5] : 1);
 	#Same as above
@@ -3193,7 +3446,8 @@ sub getRatioResolved
 					  [@{$new_relevant_genomes->[5]},
 					   @{$new_relevant_genomes->[0]}] :
 					  $new_relevant_genomes->[5]),
-                                         1,
+                                         $overall_score_flag,
+					 $gap_node,
 					 (scalar(@{$new_label_array->[5]}) &&
 					  scalar(@{$new_label_array->[0]}) ?
 					  [@{$new_counted_scores->[5]},
@@ -3205,6 +3459,23 @@ sub getRatioResolved
 	      ($real_label_counts->[5] + $real_label_counts->[0]) ==
 	      ($total_counts->[5] + $total_counts->[0]))
 	  {
+	    if($do_soln_tree)
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[5]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[5]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[5]}))
+		    {$gap_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		  {$gap_node->addChild(tree->new($genom))}
+	      }
+
             #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
             if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
               {$gap_score = 0}
@@ -3213,7 +3484,26 @@ sub getRatioResolved
               #{$gap_score = $label_counts->[5]}
           }
 	else
-	  {$gap_score = 0}
+	  {
+	    if($do_soln_tree)
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[5]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[5]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[5]}))
+		    {$gap_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		  {$gap_node->addChild(tree->new($genom))}
+	      }
+
+	    $gap_score = 0;
+	  }
 
 	##
 	## Average the weighted scores obtained from the relative children's
@@ -3468,6 +3758,106 @@ if($improvement < 0)
       }
     else
       {
+	if($do_soln_tree)
+	  {
+	    #Construct the solution tree for the partial solutions output
+	    if($total_counts->[0])
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$dot_node->addChild(tree->new($genom))}
+	      }
+
+	    if($total_counts->[1])
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[1]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[1]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[1]}))
+		  {$a_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$a_node->addChild(tree->new($genom))}
+	      }
+
+	    if($total_counts->[2])
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[2]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[2]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[2]}))
+		    {$t_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$t_node->addChild(tree->new($genom))}
+	      }
+
+	    if($total_counts->[3])
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[3]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[3]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[3]}))
+		    {$g_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$g_node->addChild(tree->new($genom))}
+	      }
+
+	    if($total_counts->[4])
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[4]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[4]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[4]}))
+		    {$c_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$c_node->addChild(tree->new($genom))}
+	      }
+
+	    if($total_counts->[5])
+	      {
+		#Add genomes to the solution tree for partial solution output
+		foreach my $genom
+		  (map {($new_label_array->[5]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[5]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[5]}))
+		    {$gap_node->addChild(tree->new($genom))}
+		foreach my $genom
+		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
+			  $genome_names->[$new_relevant_genomes
+					  ->[0]->[$_]]}
+		   (0..$#{$new_relevant_genomes->[0]}))
+		    {$gap_node->addChild(tree->new($genom))}
+	      }
+	  }
+
 	##
 	## Calculate the score of the whole solution at this SNP leaf.  Scores
 	## at this level will be collected and averaged upon return of this
