@@ -20,8 +20,13 @@ $| = 1;
 #Set up a path to the tree module on the cluster using the environment variable
 #"SNPSTI_CLUSTER_TREE_PATH"
 BEGIN
-  {if(exists($ENV{SNPSTI_CLUSTER_TREE_PATH}) && $ENV{SNPSTI_CLUSTER_TREE_PATH} ne '')
-     {use lib $ENV{SNPSTI_CLUSTER_TREE_PATH}}}
+  {
+    if(exists($ENV{SNPSTI_CLUSTER_TREE_PATH}) &&
+       $ENV{SNPSTI_CLUSTER_TREE_PATH} ne '')
+      {
+	eval("use lib $ENV{SNPSTI_CLUSTER_TREE_PATH};1");
+      }
+  }
 
 #If this is a run on the cluster, read in arguments from the environment
 #variable "SNPSTI_CLUSTER_PARAMS"
@@ -60,6 +65,7 @@ my($treefile,$snpfile,$verbose,$max_set_size_per_node,$help,$tree,$label_array,
 my $overwrite_flag = 0;
 my $quiet = 0;
 my $preserve_args = [@ARGV];
+my $DEBUG = 1;
 
 #Library for tree data structure
 use tree;
@@ -126,7 +132,7 @@ if($min_set_size_per_node > 1)
   {
     warning("By not using the default minimum solution size (1), you may see ",
 	    "smaller solutions repeated in all possible combinations.");
-    exit(2);
+    sleep(2);
   }
 
 #$snp_data_buffer_size = $max_set_size_per_node * $low_memory_mode;
@@ -181,14 +187,16 @@ my $optimized_snps = optimizeSNPs($snp_names,$genome_names,$snp_data_buffer);
 if($greedy_flag && $partial_suffix ne '')
   {
     if(!$overwrite_flag && -e "$snpfile$partial_suffix")
-      {error("File exists: [$snpfile$partial_suffix].  Greedy output going to STDERR")}
+      {error("File exists: [$snpfile$partial_suffix].  Greedy output going ",
+	     "to STDERR")}
     else
       {
         if(scalar(@analyze_nodes))
           {$partial_suffix = '.' . $analyze_nodes[0] . $partial_suffix}
         unless(open(PRTL,">$snpfile$partial_suffix"))
           {
-            error("Unable to open partial greedy set file for output [$snpfile$partial_suffix].  $!");
+            error("Unable to open partial greedy set file for output ",
+		  "[$snpfile$partial_suffix].  $!");
             exit(10);
           }
         select(PRTL);
@@ -198,21 +206,21 @@ if($greedy_flag && $partial_suffix ne '')
   }
 
 #Print out a list of equivalent SNPs to STDERR
-verbose("These SNPs are equivalent:\n\t[",
-	join("]\n\t[",
-	     map {join(',',
-		       map {$snp_names->[$_]}
-		       @$_)}
-	     grep {scalar(@$_) > 1}
-	     @$optimized_snps),
-	"]\n");
+my @tmp_equiv = map {join(',',map {$snp_names->[$_]} @$_)}
+  grep {scalar(@$_) > 1} @$optimized_snps;
+if(scalar(@tmp_equiv))
+  {verbose("These SNPs are equivalent:\n\t[",
+	   join("]\n\t[",@tmp_equiv),
+	   "]\n")}
+else
+  {verbose("All SNPs appear to be unique.")}
 
 verbose("Reading tree file: [$treefile].");
 
 #Load and validate the phylogenetic tree data
 $tree->treeThis($treefile);
 
-verbose(($skip_input_check ? "Skipping tree check" : "Error checking tree"));
+verbose(($skip_input_check ? "Skipping tree check" : ""));
 
 if(!$skip_input_check && CheckTreeNames($tree,$genome_names,$verbose))
   {
@@ -315,16 +323,16 @@ if($greedy_flag && $max_greedies == 0 && $quality_ratio == 0)
   }
 if($max_greedies !~ /^\d+$/ || $max_greedies > $num_SNPs)
   {
-    error("max-greedies (-x) must be an integer between 1 and the number of ",
-	  "SNPs: [$num_SNPs].");
     if($max_greedies > $num_SNPs)
       {
-	error("Resetting max-greedies.");
+	warning("max-greedies (-x) must be an integer between 1 and the ",
+		"number of SNPs: [$num_SNPs].\nResetting max-greedies.");
 	$max_greedies = $num_SNPs;
       }
     else
       {
-	error("Unable to proceed due to above error.");
+	error("max-greedies (-x) must be an integer between 1 and the number ",
+	      "of SNPs: [$num_SNPs].\nUnable to proceed.");
 	exit(2);
       }
   }
@@ -595,6 +603,9 @@ print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $m
 	       );
 
 	$num_solns_per_size = 0;
+
+	verbose("Call to GetNextCombo([@current_set],$set_size,",scalar(@$final_greedy_snp_candidates),")") if($DEBUG);
+
 	#While an unseen combination of SNPs based on n choose r still exists
 	#at the current set size (n = $num_SNPs, r = $set_size)
 	while(GetNextCombo(\@current_set,
@@ -628,7 +639,7 @@ print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $m
 	    if($verbose)
 	      {
 		$combos_so_far++;
-		verbose(1,
+		verbose(#1,
 			"Doing combination: [",
 			join(',',map {$snp_names->[$_]} @$candidate_set),
 			"] Solutions found: $num_solns_per_size");
@@ -781,6 +792,8 @@ print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $m
 		      {last}
 		  }
 	      }
+
+	    verbose("Call to GetNextCombo([@current_set],$set_size,",scalar(@$final_greedy_snp_candidates),")") if($DEBUG);
 	  }
 
 	#This last update will be useful if the last combination is a solution
@@ -1291,6 +1304,7 @@ sub GetNextCombo
     #has increased since the last combo
     if(scalar(@$combo) == 0 || scalar(@$combo) != $set_size)
       {
+	verbose("Initializing combo.") if ($DEBUG);
 	#Empty the combo
 	@$combo = ();
 	#Fill it with a sequence of numbers starting with 0
@@ -1302,12 +1316,14 @@ sub GetNextCombo
 
     #Define an upper limit for the last number in the combination
     my $upper_lim = $pool_size - 1;
-    my $cur_index = $#{@$combo};
+    my $cur_index = $#{$combo};
 
+    verbose("Upper limit: $upper_lim.\nCurrent Index: $cur_index") if ($DEBUG);
     #Increment the last number of the combination if it is below the limit and
     #return true
     if($combo->[$cur_index] < $upper_lim)
       {
+	verbose("Incrementing value at index $cur_index because ($combo->[$cur_index] < $upper_lim).") if ($DEBUG);
         $combo->[$cur_index]++;
         return(1);
       }
@@ -1319,21 +1335,27 @@ sub GetNextCombo
 	#Decrement the limit and the current number index
         $upper_lim--;
         $cur_index--;
+	verbose("Upper limit: $upper_lim.\nCurrent Index: $cur_index")
+	  if ($DEBUG);
       }
+
+    verbose("Incrementing value at index $cur_index.") if ($DEBUG);
 
     #Increment the last number out of the above loop
     $combo->[$cur_index]++;
 
     #For every number in the combination after the one above
-    foreach(($cur_index+1)..$#{@$combo})
+    foreach(($cur_index+1)..$#{$combo})
       {
+	verbose("Setting subsequent values.") if ($DEBUG);
 	#Set its value equal to the one before it plus one
 	$combo->[$_] = $combo->[$_-1]+1;
       }
 
-    #If we've exceded the ppol size on the last number of the combination
+    #If we've exceded the pool size on the last number of the combination
     if($combo->[-1] > $pool_size)
       {
+	verbose("Ending because we finished the pool size: ($combo->[-1] > $pool_size).") if ($DEBUG);
 	#Return false
 	return(0);
       }
@@ -1382,7 +1404,7 @@ sub GetNextIndepCombo
         return(1);
       }
 
-    my $cur_index = $#{@$combo};
+    my $cur_index = $#{$combo};
 
     #Increment the last number of the combination if it is below the pool size
     #(minus 1 because we start from zero) and return true
@@ -1413,7 +1435,7 @@ sub GetNextIndepCombo
     $combo->[$cur_index]++;
 
     #For every number in the combination after the one above
-    foreach(($cur_index+1)..$#{@$combo})
+    foreach(($cur_index+1)..$#{$combo})
       {
 	#Set its value equal to 0
 	$combo->[$_] = 0;
