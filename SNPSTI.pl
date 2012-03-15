@@ -23,9 +23,7 @@ BEGIN
   {
     if(exists($ENV{SNPSTI_CLUSTER_TREE_PATH}) &&
        $ENV{SNPSTI_CLUSTER_TREE_PATH} ne '')
-      {
-	eval("use lib $ENV{SNPSTI_CLUSTER_TREE_PATH};1");
-      }
+      {eval("use lib $ENV{SNPSTI_CLUSTER_TREE_PATH};1")}
   }
 
 #If this is a run on the cluster, read in arguments from the environment
@@ -65,7 +63,7 @@ my($treefile,$snpfile,$verbose,$max_set_size_per_node,$help,$tree,$label_array,
 my $overwrite_flag = 0;
 my $quiet = 0;
 my $preserve_args = [@ARGV];
-my $DEBUG = 1;
+my $DEBUG = 0;
 
 #Library for tree data structure
 use tree;
@@ -548,7 +546,7 @@ foreach my $node (@$node_list)
 	  }
 	    while(scalar(@$relevant_optimal_snps) &&
 		  (($num_greedies < $max_greedies || $max_greedies == 0) &&
-		   ($num_added > 1 || $quality_ratio == 0)));
+		   ($num_added > 0 || $quality_ratio == 0)));
 print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $max_greedies || $max_greedies == 0) && ($num_added > 1 || $quality_ratio == 0))\n");
 	#I know there are places where SNP order is important.  I can't
 	#remember where that is though, so I'm going to sort the greedies here
@@ -1874,7 +1872,7 @@ CLUSTER USAGE: See the "HOW TO PARALLELIZE SNPSTI" section of the --help output.
      -g   OPTIONAL  [Off] Use greedy heuristic to search for SNP solutions for
                     each branch of the phylogenetic tree.  This is faster than
                     the default exhaustive method, but is not guaranteed to
-                    find all or any solutions.  However, grredy could be run
+                    find all or any solutions.  However, greedy could be run
                     first and then do a second run using the command line to
                     list the nodes desired to be analyzed to solve the
                     remaining nodes exhaustively.
