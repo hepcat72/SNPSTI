@@ -7,7 +7,7 @@
 #Copyright 2008
 
 #These variables (in main) are used by getVersion() and usage()
-my $software_version_number = '1.0';
+my $software_version_number = '1.3';
 my $created_on_date         = '7/10/2011';
 
 ##
@@ -596,6 +596,12 @@ foreach my $input_file_set (@input_files)
 		print("$_\n");
 		next;
 	      }
+	    elsif($line_num == 1 && /^[^\t]+\t.*[\D\.\-\+]/)
+	      {
+		s/^[^\t]+\t/ \t/;
+		print("$_\n");
+		next;
+	      }
 	    my($sample,@vals);
 	    if(/^([^\t]+\t)/)
 	      {$sample = $1;s/^[^\t]+\t//}
@@ -611,11 +617,21 @@ foreach my $input_file_set (@input_files)
 
 	    @vals = split(/\s/,$_);
 
+	    #The split above ignores trailing spaces, so I need to throw on
+	    #extras to fill in arrays created from lines ending with a space
+	    if(/( +)$/)
+	      {
+		my $num_to_add = length($1);
+		foreach(1..$num_to_add)
+		  {push(@vals,'')}
+	      }
+
 	    if($num_cols && $num_cols != scalar(@vals))
 	      {
-		error("The number of columns on line [$line_num] does not ",
-		      "equal the number of columns on previous lines ",
-		      "[$num_cols].");
+		error("The number of columns on line [$line_num] of file ",
+		      "[$input_file]: [",scalar(@vals),"] does not equal the ",
+		      "number of columns on previous lines [$num_cols].\n",
+		      "Unable to proceed.");
 		quit(1);
 	      }
 	    elsif(!$num_cols)
