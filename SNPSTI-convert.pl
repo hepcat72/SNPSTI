@@ -7,7 +7,7 @@
 #Copyright 2008
 
 #These variables (in main) are used by getVersion() and usage()
-my $software_version_number = '1.3';
+my $software_version_number = '1.4';
 my $created_on_date         = '7/10/2011';
 
 ##
@@ -385,14 +385,14 @@ foreach my $cutoff (@$cutoffs)
 	my($low,$high);
 	($low,$high) = sort {$a+0 <=> $b+0} split(/~/,$cutoff);
 	
-	$cutoff_hash->{$low}  = 'SOFT';
-	$cutoff_hash->{$high} = 'SOFT';
+	$cutoff_hash->{$low + 0}  = 'SOFT';
+	$cutoff_hash->{$high + 0} = 'SOFT';
 	$softcnt++;
       }
     else
       {
 	$hardcnt++;
-	$cutoff_hash->{$cutoff+0}  = 'HARD';
+	$cutoff_hash->{$cutoff + 0} = 'HARD';
       }
   }
 
@@ -424,7 +424,7 @@ foreach my $cutoff (sort {$a+0 <=> $b+0} keys(%$cutoff_hash))
       {
 	error("There may not be any hard cutoff values [$cutoff] that ",
 	      "occur between soft cutoff values [e.g. after $lastcutoff ",
-	      "and before the next soft cotoff value].");
+	      "and before the next soft cutoff value].");
 	quit(2);
       }
     else
