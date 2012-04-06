@@ -7,7 +7,7 @@
 #Copyright 2008
 
 #These variables (in main) are used by getVersion() and usage()
-my $software_version_number = '1.4';
+my $software_version_number = '1.5';
 my $created_on_date         = '7/10/2011';
 
 ##
@@ -28,6 +28,7 @@ my $help                = 0;
 my $version             = 0;
 my $overwrite           = 0;
 my $noheader            = 0;
+my $center_value        = 0;
 
 #These variables (in main) are used by the following subroutines:
 #verbose, error, warning, debug, getCommand, quit, and usage
@@ -44,6 +45,7 @@ my $GetOptHash =
 				     [sglob($_[1])])}, #         supplied
    '<>'                 => sub {push(@input_files,     #REQUIRED unless -i is
 				     [sglob($_[0])])}, #         supplied
+   'm|center=s'         => \$center_value,             #OPTIONAL [0]
    'o|outfile-suffix=s' => \$outfile_suffix,           #OPTIONAL [undef]
    'outdir=s'           => sub {push(@outdirs,         #OPTIONAL
 				     [sglob($_[1])])},
@@ -375,7 +377,7 @@ if(!isStandardOutputToTerminal() && !$noheader)
 #either in the set before or the set after.  I need to identify those when I
 #make the cutoff hash
 my $cutoff_hash = {};
-my $hardcnt     = 0;
+my $hardcnt     = scalar(@$cutoffs) + 1;
 my $softcnt     = 0;
 foreach my $cutoff (@$cutoffs)
   {
@@ -391,7 +393,6 @@ foreach my $cutoff (@$cutoffs)
       }
     else
       {
-	$hardcnt++;
 	$cutoff_hash->{$cutoff + 0} = 'HARD';
       }
   }
@@ -399,17 +400,18 @@ foreach my $cutoff (@$cutoffs)
 debug("Cutoff hash: {",join(',',map {"$_=>$cutoff_hash->{$_}"}
 			    keys(%$cutoff_hash)),"}.");
 
-if($hardcnt > 4)
+if($hardcnt > 5)
   {
-    error("Only 4 or fewer hard cutoffs are supported by SNPSTI.  $hardcnt ",
-	  "were supplied.");
+    error("Only 4 or fewer cutoffs or cutoff ranges (i.e. 5 resulting ",
+	  "categories) are supported by SNPSTI.  [",($hardcnt-1),
+	  "] cutoffs were supplied.");
     quit(1);
   }
 if($softcnt > 3)
   {
     error("Only 3 or fewer soft cutoffs are supported by SNPSTI.  $softcnt ",
 	  "were supplied.");
-    quit(1);
+    quit(2);
   }
 
 my $softcheck = 0;
@@ -431,6 +433,54 @@ foreach my $cutoff (sort {$a+0 <=> $b+0} keys(%$cutoff_hash))
       {$softcheck = 0}
     $lastcutoff = $cutoff;
   }
+
+#Figure out the categories
+my @modes = ();
+my $num_softs = 0;
+foreach my $cutoff (map {$_ + 0} sort {($a + 0) <=> ($b + 0)}
+		    keys(%$cutoff_hash))
+  {
+    if($cutoff_hash->{$cutoff} eq 'HARD' ||
+       ($cutoff_hash->{$cutoff} eq 'SOFT' && ($num_softs % 2) == 0))
+      {push(@modes,'HARD')}
+    elsif($cutoff_hash->{$cutoff} eq 'SOFT' && ($num_softs % 2))
+      {push(@modes,'SOFT')}
+    $num_softs++ if($cutoff_hash->{$cutoff} eq 'SOFT');
+  }
+push(@modes,'HARD');
+debug("Modes created, in order: [",join(',',@modes),"].");
+
+my @hards  = ('1','2','3','4','5');
+my @softs  = ('W','K','S');
+my @categories = ();
+foreach my $mode (@modes)
+  {
+    if($mode eq 'SOFT')
+      {
+	if(scalar(@softs))
+	  {push(@categories,shift(@softs))}
+	else
+	  {
+	    error("No more soft categories left.  This should not have ",
+		  "happened.  Please contact the developer.  Use --version ",
+		  "--verbose to get developer contact info.");
+	    quit(3);
+	  }
+      }
+    else
+      {
+	if(scalar(@hards))
+	  {push(@categories,shift(@hards))}
+	else
+	  {
+	    error("No more hard categories left.  This should not have ",
+		  "happened.  Please contact the developer.  Use --version ",
+		  "--verbose to get developer contact info.");
+	    quit(4);
+	  }
+      }
+  }
+debug("Categories created, in order: [",join(',',@categories),"].");
 
 #For each input file set
 my $set_num = 0;
@@ -647,9 +697,8 @@ foreach my $input_file_set (@input_files)
 			   {warning("Non-numeric value [$val] encountered in ",
 				    "your file [$input_file] on line ",
 				    "[$line_num].")}
-			 my $outval = '5';
-			 my @hards  = ('1','2','3','4','5');
-			 my @softs  = ('W','K','S');
+			 my $outval = $categories[-1];
+			 my @cats = @categories;
 			 foreach my $cutoff (map {$_ + 0}
 					     sort {($a + 0) <=> ($b + 0)}
 					     keys(%$cutoff_hash))
@@ -660,25 +709,36 @@ foreach my $input_file_set (@input_files)
 				 last;
 			       }
 			     debug("Is $val <(=) $cutoff?");
-			     if($cutoff < 0 ?
+			     if($cutoff < $center_value ?
 				($val <= $cutoff) : ($val < $cutoff))
 			       {
 				 debug("Yes");
-				 if($cutoff_hash->{$cutoff} eq 'SOFT')
-				   {$outval = $softs[0]}
-				 else
-				   {$outval = $hards[0]}
+				 $outval = $cats[0];
 				 last;
 			       }
 			     else
 			       {
 				 debug("No");
-				 shift(@hards);
-				 if($hards[0] > 2)
-				   {shift(@softs)}
+				 if(scalar(@cats))
+				   {
+				     my $elim = shift(@cats);
+				     debug("Removing category [$elim].");
+				   }
+				 else
+				   {error("Too few catgories encountered [",
+					  scalar(@categories),"] when ",
+					  "evaluating value [$val] with ",
+					  "these catorgries [",
+					  join(',',@categories),"] and these ",
+					  "modes [",join(',',@modes),"].  ",
+					  "This should not have happened.  ",
+					  "Please contact the developer to ",
+					  "report this problem.  Use ",
+					  "--verbose --version to get ",
+					  "contact info.")}
 			       }
 			   }
-			 debug("Result: $outval");
+			 debug("Result for [$val]: $outval");
 			 $outval;
 		       } @vals),"\n");
 	  }
@@ -947,6 +1007,27 @@ end_print
                                    included in the greater categories (e.g.
                                    value 4.0 would be in the category of 4.0 to
                                    infinity).
+     -m|--center          OPTIONAL [0] This is the center value which affects
+                                   whether data values encountered will be
+                                   subject to <= or just <.  For a center value
+                                   of 0, when given cutoffs are processed in
+                                   ascending order, values will be assigned to
+                                   a lesser category if they are <= a cutoff if
+                                   that cutoff is less than 0.  If the cutoff
+                                   is greater than or equal to 0, data values
+                                   will be assigned to a lesser category if
+                                   they are less than that cutoff.  For
+                                   example: Given center = 0;Cutoffs = -10 and
+                                   10;Categories = 1, 2, and 3;The following
+                                   data values will be assigned these
+                                   categories:
+                                    -11 = category 1;
+                                    -10 = category 1;
+                                     -9 = category 2;
+                                      0 = category 2;
+                                      9 = category 2;
+                                     10 = category 3;
+                                     11 = category 3;
      -o|--outfile-suffix  OPTIONAL [nothing] This suffix is added to the input
                                    file names to use as output files.
                                    Redirecting a file into this script will
