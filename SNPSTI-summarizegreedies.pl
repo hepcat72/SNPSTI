@@ -6,7 +6,7 @@
 #Center for Computational Research
 #Copyright 2008
 #These variables (in main) are used by getVersion() and usage()
-my $software_version_number = '1.4';
+my $software_version_number = '1.5';
 my $created_on_date         = '3/27/2012';
 
 ##
@@ -502,6 +502,7 @@ foreach my $input_file_set (@input_files)
 	      "] SNPSTI standard error file sets, and [",
 	      scalar(@{$stderr_files[0]}),
 	      "] files in the first SNPSTI standard error file set.");
+	debug();
 	quit(2);
       }
 
@@ -513,6 +514,10 @@ foreach my $input_file_set (@input_files)
 	  scalar(@sample_info_files) == scalar(grep {scalar(@$_) == 1}
 					       @sample_info_files))
       {$sampleinfo_file_set = [map {$_[0]} @sample_info_files]}
+    elsif(scalar(@input_files) == scalar(@sample_info_files) &&
+	  scalar(@sample_info_files) == scalar(grep {scalar(@$_) == 1}
+					       @sample_info_files))
+      {$sampleinfo_file_set = $sample_info_files[$set_num]}
     elsif(1 == scalar(@sample_info_files) &&
 	  1 == scalar(grep {scalar(@$_) == 1} @sample_info_files))
       {$sampleinfo_file_set = $sample_info_files[0]}
@@ -2197,13 +2202,12 @@ sub getDescHash
 		my $name = $1;
 		my $node = $2;
 		unless(exists($hash->{$node}))
-		  {
-		    $hash->{$node}->{DESC} .= $path .
-		      ($path eq '' ? '' : $delimiter) . $prepends->[$cnt] .
-			$name;
-		    $path = $hash->{$node}->{DESC};
-		    $backup_path = $path;
-		  }
+		  {$hash->{$node}->{DESC} .= $path .
+		     ($path eq '' ? '' : $delimiter) . $prepends->[$cnt] .
+		       $name}
+		$path = $path . ($path eq '' ? '' : $delimiter) .
+		  $prepends->[$cnt] . $name;
+		$backup_path = $path;
 		$hash->{$node}->{NUM}++;
 	      }
 	    else
@@ -2211,12 +2215,12 @@ sub getDescHash
 		warning("Unmatched node description: [$x[$i]] using pattern ",
 			"(-p): [$node_pat].");
 		unless(exists($hash->{$x[$i]}))
-		  {
-		    $backup_hash->{$x[$i]}->{DESC} = $backup_path .
-		      ($backup_path eq '' ? '' : $delimiter) .
-			$prepends->[$i] . $x[$i];
-		    $backup_path = $backup_hash->{$x[$i]}->{DESC};
-		  }
+		  {$backup_hash->{$x[$i]}->{DESC} = $backup_path .
+		     ($backup_path eq '' ? '' : $delimiter) .
+		       $prepends->[$i] . $x[$i]}
+		$backup_path = $backup_path .
+		  ($backup_path eq '' ? '' : $delimiter) .
+		    $prepends->[$i] . $x[$i];
 		$backup_hash->{$x[$i]}->{NUM}++;
 	      }
 	    $cnt++;
