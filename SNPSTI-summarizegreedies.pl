@@ -6,7 +6,7 @@
 #Center for Computational Research
 #Copyright 2008
 #These variables (in main) are used by getVersion() and usage()
-my $software_version_number = '1.0';
+my $software_version_number = '1.4';
 my $created_on_date         = '3/27/2012';
 
 ##
@@ -19,17 +19,26 @@ use File::Glob ':glob';
 
 #Declare & initialize variables.  Provide default values here.
 my($outfile_suffix); #Not defined so input can be overwritten
-my @input_files         = ();
-my @stderr_files        = ();
-my @outdirs             = ();
-my $current_output_file = '';
-my $help                = 0;
-my $version             = 0;
-my $overwrite           = 0;
-my $noheader            = 0;
-my $error_limit         = 50;
-my $score1_min          = 0;
-my $score2_min          = 0;
+my @input_files          = ();
+my @stderr_files         = ();
+my @sample_info_files    = ();
+my @default_desc_columns = (2,3,4);
+my @desc_columns         = ();
+my $desc_delimiter       = '/';
+my @default_desc_prepends= ('Main-','Major-','Minor-');
+my @desc_prepends        = ();
+my $node_name_pattern    = '^[^\(]+';
+my @default_states       = ('unk','low','mid','hi','vhi','vvh');
+my @states               = ();
+my @outdirs              = ();
+my $current_output_file  = '';
+my $help                 = 0;
+my $version              = 0;
+my $overwrite            = 0;
+my $noheader             = 0;
+my $error_limit          = 50;
+my $score1_min           = 0;
+my $score2_min           = 0;
 
 #These variables (in main) are used by the following subroutines:
 #verbose, error, warning, debug, getCommand, quit, and usage
@@ -45,8 +54,18 @@ my $GetOptHash =
 			             [sglob($_[1])])}, #         supplied
    '<>'                 => sub {push(@input_files,     #REQUIRED unless -i is
 				     [sglob($_[0])])}, #         supplied
-   'e|stderr-file=s'    => sub {push(@stderr_files,    #OPTIONAL
+   'e|stderr-file=s'    => sub {push(@stderr_files,    #OPTIONAL [none]
 			             [sglob($_[1])])},
+   's|sampleinfo-file=s'=> sub {push(@sample_info_files,
+			             [sglob($_[1])])}, #OPTIONAL [none]
+   'd|node-desc-col=s'  => sub {push(@desc_columns,    #OPTIONAL [2,3,4]
+			             sglob($_[1]))},
+   'desc-prepends=s'    => sub {push(@desc_columns,    #OPTIONAL ['Main-',
+			             sglob($_[1]))},   #     'Major-','Minor-']
+   'convert-states=s'   => sub {push(@states,          #OPTIONAL ['unk','low',
+			             sglob($_[1]))},   #'mid','hi','vhi','vvh']
+   'desc-delimiter=s'   => \$desc_delimiter,           #OPTIONAL [/]
+   'p|node-patern=s'    => \$node_name_pattern,        #OPTIONAL ['^[^\(]+']
    'loc1-score-min=s'   => \$score1_min,               #OPTIONAL [0]
    'loc2-score-min=s'   => \$score2_min,               #OPTIONAL [0]
    'o|outfile-suffix=s' => \$outfile_suffix,           #OPTIONAL [undef]
@@ -362,6 +381,45 @@ if(defined($outfile_suffix))
   }
 debug(3);
 
+#Error check the node description column numbers with the prepend strings for
+#the sample info file
+if(scalar(@desc_columns) && scalar(@desc_prepends) &&
+   scalar(@desc_columns) != scalar(@desc_prepends))
+  {
+    error("--desc-prepends and --node-desc-col must each have the same ",
+	  "number of space-delimited values.  [",scalar(@desc_prepends),
+	  "] prepend values and [",scalar(@desc_columns),
+	  "] columns were supplied.");
+    quit(4);
+  }
+
+#Error-check the node description column numbers
+if(scalar(grep {$_ < 1} @desc_columns))
+  {
+    my @errors = grep {$_ < 1} @desc_columns;
+    error("Ivalid values supplied to --node-desc-col: [@errors].  Must be ",
+	  "integers greater than 0.");
+    quit(5);
+  }
+
+#Handle the node description column number defaults
+my @desc_indexes = ();
+if(scalar(@desc_columns))
+  {@desc_indexes = map {$_ - 1} @desc_columns}
+else
+  {@desc_indexes = map {$_ - 1} @default_desc_columns}
+
+#Set the prepend strings for the node descriptions of the sample info file
+if(scalar(@desc_prepends) == 0 &&
+   scalar(@desc_indexes) == scalar(@default_desc_prepends))
+  {@desc_prepends = @default_desc_prepends}
+else
+  {@desc_prepends = map {''} @desc_indexes}
+
+#Set default states if necessary
+if(scalar(@states) == 0)
+  {@states = @default_states}
+
 #Create the output directories
 if(scalar(@outdirs))
   {
@@ -407,12 +465,16 @@ if(!defined($outfile_suffix))
 	  "states back using the original cutoffs to make sense of them.\n",
 	  "#Equivalent loci (in the sense of resolving power, not state) ",
 	  "will be shown comma-delimited.\n",
-	  "#Node\tGreedy Num\tNum Target Samples with Real Values\t",
-	  "Total Num Samples with Real Values\t",
+	  "#Node\t",(scalar(@sample_info_files) ? "Node Description\t" : ''),
+	  "Greedy Num\tNum Target Samples with Real ",
+	  "Values\tTotal Num Samples with Real Values\t",
 	  "Num Locus 1 States Targets Exist in\t",
 	  "Num Locus 2 States Targets Exist in\tLocus 1\t",
-	  "Score Locus 1\tLocus 2\tScore Locus 2\t",
-	  "States(Targets/Total)\n");
+	  "Score Locus 1\tLocus 2\tScore Locus 2\t","States(Targets/Total)\t",
+	  "Call Locus 1\t","Call Locus 2\t","Specificity Combined\t",
+	  "Sensitivity Combined\t","Specificity Locus 1\t",
+	  "Sensitivity Locus 1\t","Specificity Locus 2\t",
+	  "Sensitivity Locus 2","\n");
   }
 
 #For each input file set
@@ -433,9 +495,40 @@ foreach my $input_file_set (@input_files)
       {$stderr_file_set = [map {$_[0]} @stderr_files]}
     elsif(scalar(@stderr_files))
       {
-	error("Cannot match up standard error files with the partial greedy ",
-	      "solution files.");
+	error("Cannot match up standard error file sets with the partial ",
+	      "greedy solution file sets.  There are [",scalar(@input_files),
+	      "] input file sets, [",scalar(@$input_file_set),
+	      "] files in the first input file set, [",scalar(@stderr_files),
+	      "] SNPSTI standard error file sets, and [",
+	      scalar(@{$stderr_files[0]}),
+	      "] files in the first SNPSTI standard error file set.");
 	quit(2);
+      }
+
+    my $sampleinfo_file_set = [];
+    if(scalar(@sample_info_files) == scalar(@input_files) &&
+       scalar(@$input_file_set) == scalar(@{$sample_info_files[$set_num]}))
+      {$sampleinfo_file_set = $sample_info_files[$set_num]}
+    elsif(scalar(@$input_file_set) == scalar(@sample_info_files) &&
+	  scalar(@sample_info_files) == scalar(grep {scalar(@$_) == 1}
+					       @sample_info_files))
+      {$sampleinfo_file_set = [map {$_[0]} @sample_info_files]}
+    elsif(1 == scalar(@sample_info_files) &&
+	  1 == scalar(grep {scalar(@$_) == 1} @sample_info_files))
+      {$sampleinfo_file_set = $sample_info_files[0]}
+    elsif(scalar(@sample_info_files) == 1 &&
+	  scalar(@{$sample_info_files[0]}) == scalar(@input_files))
+      {$sampleinfo_file_set = [$sample_info_files[0]->[$set_num]]}
+    elsif(scalar(@sample_info_files))
+      {
+	error("Cannot match up sample info file sets with the partial greedy ",
+	      "solution file sets.  There are [",scalar(@input_files),"] ",
+	      "input file sets, [",scalar(@$input_file_set),"] files in the ",
+	      "first input file set, [",scalar(@sample_info_files),"] SNPSTI ",
+	      "standard error file sets, and [",
+	      scalar(@{$sample_info_files[0]}),
+	      "] files in the first SNPSTI standard error file set.");
+	quit(7);
       }
 
     #For each input file
@@ -452,6 +545,27 @@ foreach my $input_file_set (@input_files)
 		  "greedy solution files.");
 	    quit(3);
 	  }
+
+	my $sampleinfo_file = '';
+	if(scalar(@$sampleinfo_file_set) == 1)
+	  {$sampleinfo_file = $sampleinfo_file_set->[0]}
+	elsif(scalar(@$sampleinfo_file_set) == scalar(@$input_file_set))
+	  {$sampleinfo_file = $sampleinfo_file_set->[$file_num]}
+	elsif(scalar(@$sampleinfo_file_set))
+	  {
+	    error("Cannot match up sample info files with the partial ",
+		  "greedy solution files.");
+	    quit(8);
+	  }
+
+	#Get desc_hash->{$node_name}->{DESC|NUM} = string|number
+	my $desc_hash = {};
+	if(scalar(@sample_info_files))
+	  {$desc_hash = getDescHash($sampleinfo_file,
+				    \@desc_indexes,
+				    \@desc_prepends,
+				    $desc_delimiter,
+				    $node_name_pattern)}
 
 	#If an output file name suffix has been defined
 	if(defined($outfile_suffix))
@@ -590,7 +704,6 @@ foreach my $input_file_set (@input_files)
 	      }
 	    else
 	      {verbose('[',$stderr_file,'] ','Opened SNPSTI error file.')}
-
 
 	    #For each line in the current SNPSTI error file
 	    while(getLine(*SNPSTIERR))
@@ -852,12 +965,17 @@ foreach my $input_file_set (@input_files)
 		  "to make sense of them.\n",
 		  "#Equivalent loci (in the sense of resolving power, not ",
 		  "state) will be shown comma-delimited.\n",
-		  "#Node\tGreedy Num\tNum Target Samples with Real Values\t",
+		  "#Node\t",
+		  (scalar(@sample_info_files) ? "Node Description\t" : ''),
+		  "Greedy Num\tNum Target Samples with Real Values\t",
 		  "Total Num Samples with Real Values\t",
 		  "Num Locus 1 States Targets Exist in\t",
 		  "Num Locus 2 States Targets Exist in\tLocus 1\t",
 		  "Score Locus 1\tLocus 2\tScore Locus 2\t",
-		  "States(Targets/Total)\n");
+		  "States(Targets/Total)\t","Call Locus 1\t","Call Locus 2\t",
+		  "Specificity Combined\t","Sensitivity Combined\t",
+		  "Specificity Locus 1\t","Sensitivity Locus 1\t",
+		  "Specificity Locus 2\t","Sensitivity Locus 2","\n");
 	  }
 
 	#Now I want to sort by ascending number of states and descending score
@@ -876,9 +994,36 @@ foreach my $input_file_set (@input_files)
 			  0)} keys(%$filtered_hash))
 	    {
 	      debug("Outputting iteration [$iteration].");
+
+	      if(scalar(@sample_info_files) &&
+		 (!exists($desc_hash->{$node}) ||
+		  !defined($desc_hash->{$node})))
+		{
+		  error("Node: [$node] from input file: [$input_file] ",
+			"not found in sample info file: [$sampleinfo_file].  ",
+			"If the node named here is a file name, then that ",
+			"would mean that the node could not be found the ",
+			"SNPSTI standard error file: [$stderr_file].")
+		}
+
 	      if(exists($filtered_hash->{$iteration}->{2}))
 		{
+		  my $sens_spec_ary =
+		    (scalar(@sample_info_files) ?
+		     getSensitivitySpecificity($filtered_hash->{$iteration}
+					       ->{2}->{STATES},
+					       \@states,
+					       $desc_hash->{$node}->{NUM}) :
+		     []);
+
+		  my @mystates =
+		    convertStates($filtered_hash->{$iteration}->{2}->{STATES},
+				  \@states);
+
 		  print($node,"\t",
+			(scalar(@sample_info_files) ?
+			 (exists($desc_hash->{$node}) ?
+			  "$desc_hash->{$node}->{DESC}\t" : "$node\t") : ''),
 			$iteration,"\t",
 			$filtered_hash->{$iteration}->{REALTOTAL},"\t",
 			$filtered_hash->{$iteration}->{ALLTOTAL},"\t",
@@ -898,15 +1043,29 @@ foreach my $input_file_set (@input_files)
 				       ->{LOCUS}} :
 			 $filtered_hash->{$iteration}->{2}->{LOCUS}),"\t",
 			$filtered_hash->{$iteration}->{2}->{SCORE},"\t",
-			join(' ',map {"$_->[1]($_->[2]/$_->[3])"}
-			     sort {$b->[2] <=> $a->[2] || $a->[3] <=> $b->[3]}
-			     #grep {$_->[2]}
-			     @{$filtered_hash->{$iteration}->{2}->{STATES}}),
+			join(' ',@mystates),
+			(scalar(@sample_info_files) ? "\t" .
+			 join("\t",@$sens_spec_ary) . "\t" : ''),
 			"\n");
 		}
 	      else
 		{
+		  my $sens_spec_ary =
+		    (scalar(@sample_info_files) ?
+		     getSensitivitySpecificity($filtered_hash->{$iteration}
+					       ->{1}->{STATES},
+					       \@states,
+					       $desc_hash->{$node}->{NUM}) :
+		     []);
+
+		  my @mystates =
+		    convertStates($filtered_hash->{$iteration}->{1}->{STATES},
+				  \@states);
+
 		  print($node,"\t",
+			(scalar(@sample_info_files) ?
+			 (exists($desc_hash->{$node}) ?
+			  "$desc_hash->{$node}->{DESC}\t" : "$node\t") : ''),
 			$iteration,"\t",
 			$filtered_hash->{$iteration}->{REALTOTAL},"\t",
 			$filtered_hash->{$iteration}->{ALLTOTAL},"\t",
@@ -917,10 +1076,9 @@ foreach my $input_file_set (@input_files)
 				       ->{LOCUS}} :
 			 $filtered_hash->{$iteration}->{1}->{LOCUS}),"\t",
 			$filtered_hash->{$iteration}->{1}->{SCORE},"\t\t\t",
-			join(' ',map {"$_->[1]($_->[2]/$_->[3])"}
-			     sort {$b->[2] <=> $a->[2] || $a->[3] <=> $b->[3]}
-			     #grep {$_->[2]}
-			     @{$filtered_hash->{$iteration}->{1}->{STATES}}),
+			join(' ',@mystates),
+			(scalar(@sample_info_files) ? "\t" .
+			 join("\t",@$sens_spec_ary) . "\t" : ''),
 			"\n");
 		}
 	    }
@@ -1023,9 +1181,30 @@ rwleach\@ccr.buffalo.edu
 * SNPSTI STDERR FILE: The standard error output created from SNPSTI.pl *run on
                       a single input tree node*.
 
+* SAMPLE INFO FILE: A tab-delimited file containing node names and node
+                    descriptions.  The node names must match those found in the
+                    input and SNPSTI standard error files.  The description may
+                    span multiple columns which may be edited and joined
+                    together using --desc-delimiter and --desc-prepends.  The
+                    node names may be parsed out using -p.  There should be a
+                    row for every sample which will be counted for each node to
+                    determine sensitivity and specificity of each locus in each
+                    solution.  Example:
+
+#Sample	Main Branch	Major Branch	Minor Branch	Tissue Type	DFS Order
+TCGA-E2-A14X-01A-11R-A115-07	2(5TUMOR)	3(2TUMOR)	none1()	TUMOR	1
+TCGA-E2-A1IP-01A-11R-A14D-07	2(5TUMOR)	3(2TUMOR)	none2()	TUMOR	2
+TCGA-E2-A14R-01A-11R-A115-07	2(5TUMOR)	4(3TUMOR)	none3()	TUMOR	3
+TCGA-E2-A159-01A-11R-A115-07	2(5TUMOR)	4(3TUMOR)	5(2TUMOR)	TUMOR	4
+TCGA-E2-A1LH-01A-11R-A14D-07	2(5TUMOR)	4(3TUMOR)	5(2TUMOR)	TUMOR	5
+TCGA-E2-A1LA-01A-11R-A144-07	6(69TUMOR/10NORMAL)	7(10TUMOR)	8(3TUMOR)	TUMOR	6
+TCGA-E2-A108-01A-13R-A10J-07	6(69TUMOR/10NORMAL)	7(10TUMOR)	8(3TUMOR)	TUMOR	7
+
+
 * OUTPUT FORMAT: Tab-delimited file.  The columns are as follows:
 
                  Node
+                 Node Description
                  Greedy Num
                  Num Target Samples with Real Values
                  Total Num Samples with Real Values
@@ -1150,6 +1329,25 @@ end_print
                                    (e.g. the second SNP in a greedy solution).
                                    If locus 2 doesn't pass this criteria,
                                    locus 1 is still kept.
+     -s|--sampleinfo-file OPTIONAL [none] Sample Info file containing
+                                   descriptions for the node names found in the
+                                   solutions and standard error files.  See
+                                   --help for file format.
+     -d|--node-desc-col   OPTIONAL ["2 3 4"] The column numbers where node
+                                   descriptions can be found (joined together
+                                   using --desc-delimiter and --desc-prepends).
+     --desc-prepends      OPTIONAL ["Main- Major- Minor-"] These strings are
+                                   prepended to the respective node description
+                                   column values found in the columns supplied
+                                   with -d.  Space delimited.
+     --desc-delimiter     OPTIONAL [/] If multiple columns are supplied to -d,
+                                   the resulting description will be joined
+                                   together with this string and the strings
+                                   provided to --desc-prepends.
+     -p|--node-patern     OPTIONAL [^[^\(]+] Perl regular expression used to
+                                   parse the node name from the string found in
+                                   the column(s) indicated via -d.  Values not
+                                   matching this pattern will be ignored.
      -o|--outfile-suffix  OPTIONAL [nothing] This suffix is added to the input
                                    file names to use as output files.
                                    Redirecting a file into this script will
@@ -1817,7 +2015,7 @@ sub sglob
 	warning("Undefined command line string encountered.");
 	return($command_line_string);
       }
-    return(map {my @x = bsd_glob($_);scalar(@x) ? @x : $_}
+    return(sort {$a cmp $b} map {my @x = bsd_glob($_);scalar(@x) ? @x : $_}
 	   split(/(?<!\\)\s+/,$command_line_string));
   }
 
@@ -1954,4 +2152,230 @@ sub printRunReport
     if($main::error_number || $main::warning_number)
       {print STDERR ("\tScroll up to inspect full errors/warnings ",
 		     "in-place.\n")}
+  }
+
+#This parses the sample info file
+sub getDescHash
+  {
+    my $file        = $_[0];
+    my $indexes     = $_[1];
+    my $prepends    = $_[2];
+    my $delimiter   = $_[3];
+    my $node_pat    = $_[4];
+    my $hash        = {};
+    my $backup_hash = {};
+
+    my $largest_col = (sort {$b <=> $a} @$indexes)[0] + 1;
+
+    #Open the input file
+    if(!open(FILE,$file))
+      {
+	#Report an error and iterate if there was an error
+	error("Unable to open sample info file: [$file].\n$!");
+	return($hash);
+      }
+    else
+      {verbose("[$file] Opened sample info file.")}
+
+    while(getLine(*FILE))
+      {
+	next if(/^#/ || /^\s*$/);
+	chomp;
+	my @x = split(/\t/,$_);
+	if(scalar(@x) < $largest_col)
+	  {
+	    warning("Too few columns in file: [$file] line: [$_].");
+	    next;
+	  }
+	my $path = '';
+	my $backup_path = '';
+	my $cnt = 0;
+	foreach my $i (@$indexes)
+	  {
+	    if($x[$i] =~ /(.*?($node_pat).*)/)
+	      {
+		my $name = $1;
+		my $node = $2;
+		unless(exists($hash->{$node}))
+		  {
+		    $hash->{$node}->{DESC} .= $path .
+		      ($path eq '' ? '' : $delimiter) . $prepends->[$cnt] .
+			$name;
+		    $path = $hash->{$node}->{DESC};
+		    $backup_path = $path;
+		  }
+		$hash->{$node}->{NUM}++;
+	      }
+	    else
+	      {
+		warning("Unmatched node description: [$x[$i]] using pattern ",
+			"(-p): [$node_pat].");
+		unless(exists($hash->{$x[$i]}))
+		  {
+		    $backup_hash->{$x[$i]}->{DESC} = $backup_path .
+		      ($backup_path eq '' ? '' : $delimiter) .
+			$prepends->[$i] . $x[$i];
+		    $backup_path = $backup_hash->{$x[$i]}->{DESC};
+		  }
+		$backup_hash->{$x[$i]}->{NUM}++;
+	      }
+	    $cnt++;
+	  }
+      }
+
+    close(FILE);
+
+    return(scalar(keys(%$hash)) ? $hash : $backup_hash);
+  }
+
+sub getSensitivitySpecificity
+  {
+    my $instates     = $_[0]; #[[?,state_str,numer,denom],
+                              # [?,state_str,numer,denom],...]
+    my $states       = $_[1]; #From @states in main
+    my $node_size    = $_[2]; #From $desc_hash->{$node}->{NUM}
+    my $extras_array = [];
+
+    my $first_time         = 1;
+    my $num_targets_state1 = 0;
+    my $total_state1       = 0;
+    my $num_targets_state2 = 0;
+    my $total_state2       = 1; #Def to 1 so no div. by 0 if no state2 exists
+    my $state1             = '';
+    my $state2             = '';
+
+    #Sort by descending numerator
+    foreach my $instate (sort {$b->[2] <=> $a->[2] || $a->[3] <=> $b->[3]}
+			 @$instates)
+      {
+	my $state_str = $instate->[1];
+	my $numer     = $instate->[2];
+	my $denom     = $instate->[3];
+
+	debug("Doing state [$state_str] numer [$numer] denom [$denom].");
+
+	#If this is the first time through the loop, this is the first and most
+	#abundant state, so record what locus 1 and 2 are.
+	if($first_time)
+	  {
+	    debug("Setting locus states.");
+
+	    if($state_str =~ /^(\S)(\S)$/)
+	      {
+		$state1 = $1;
+		$state2 = $2 || '';
+		#Push on the call for locus 1
+		push(@$extras_array,convertState($state1,$states));
+		#Push on the call for locus 2
+		push(@$extras_array,convertState($state2,$states));
+		#Push on the combined specificity and sensitivity
+		push(@$extras_array,($numer/$denom,$numer/$node_size));
+		$total_state2 = 0;
+	      }
+	    elsif($state_str =~ /^(\S)$/)
+	      {
+		$state1 = $1;
+		$state2 = '';
+		#Push on the call for locus 1
+		push(@$extras_array,convertState($state1,$states));
+		#Push on the call for locus 2
+		push(@$extras_array,convertState($state2,$states));
+		#Push on the combined specificity and sensitivity
+		push(@$extras_array,($numer/$denom,$numer/$node_size));
+	      }
+	  }
+
+	#If the current state has locus 1 as the same state as its most
+	#abundant (i.e. first state), sum its numerator and denominator, (i.e.
+	#the number of targets in this state and the total number of samples in
+	#this state
+	if($state_str =~ /^$state1/)
+	  {
+	    debug("Adding state1's numer $numer and denom $denom.");
+	    $num_targets_state1 += $numer;
+	    $total_state1       += $denom;
+	  }
+
+	#If there is a second locus
+	if($state2 ne '')
+	  {
+	    #If the current state has locus 2 as the same state as its most
+	    #abundant (i.e. first state), sum its numerator and denominator,
+	    #(i.e. the number of targets in this state and the total number of
+	    #samples in this state
+	    if($state_str =~ /^[\.ATGC\-]$state2/)
+	      {
+		debug("Adding state2's numer $numer and denom $denom.");
+		$num_targets_state2 += $numer;
+		$total_state2       += $denom;
+	      }
+	  }
+
+	$first_time = 0;
+      }
+
+    debug("Result of locus 2 spec & sens: [$num_targets_state2/$total_state2 ",
+	  "& $num_targets_state2/$node_size].");
+
+    push(@$extras_array,($num_targets_state1/$total_state1,
+			 $num_targets_state1/$node_size,
+			 ($num_targets_state2/$total_state2 || ""),
+			 ($num_targets_state2/$node_size) || ""));
+
+    return(wantarray ? @$extras_array : $extras_array);
+  }
+
+sub convertStates
+  {
+    my $instates = $_[0]; #[[?,state_str,numer,denom],
+                          # [?,state_str,numer,denom],...]
+    my $states   = $_[1];
+
+    my $outstates = [];
+
+    #Sort by descending numerator
+    foreach my $instate (sort {$b->[2] <=> $a->[2] || $a->[3] <=> $b->[3]}
+			 @$instates)
+      {
+	my $state_str = $instate->[1];
+	my $numer     = $instate->[2];
+	my $denom     = $instate->[3];
+
+	#Convert the states
+	$state_str =~ s/\./$states->[0],/g;
+	$state_str =~ s/[A1]/$states->[1],/g if(scalar(@$states) > 1);
+	$state_str =~ s/[T2]/$states->[2],/g if(scalar(@$states) > 2);
+	$state_str =~ s/[G3]/$states->[3],/g if(scalar(@$states) > 3);
+	$state_str =~ s/[C4]/$states->[4],/g if(scalar(@$states) > 4);
+	$state_str =~ s/[\-5]/$states->[5],/g if(scalar(@$states) > 5);
+	$state_str =~ s/,$//g;
+
+	push(@$outstates,"$state_str($numer/$denom)");
+      }
+
+    return(wantarray ? @$outstates : $outstates);
+  }
+
+sub convertState
+  {
+    my $state = $_[0];
+    my $states = $_[1];
+    my $outstate = 'err';
+
+    if($state eq '' || !defined($state))
+      {$outstate = ''}
+    elsif($state =~ /^\.$/)
+      {$outstate = $states->[0]}
+    elsif($state =~ /^[A1]$/)
+      {$outstate = $states->[1] if(scalar(@$states) > 1)}
+    elsif($state =~ /^[T2]$/)
+      {$outstate = $states->[2] if(scalar(@$states) > 2)}
+    elsif($state =~ /^[G3]$/)
+      {$outstate = $states->[3] if(scalar(@$states) > 3)}
+    elsif($state =~ /^[C4]$/)
+      {$outstate = $states->[4] if(scalar(@$states) > 4)}
+    elsif($state =~ /^[\-5]$/)
+      {$outstate = $states->[5] if(scalar(@$states) > 5)}
+
+    return($outstate);
   }
