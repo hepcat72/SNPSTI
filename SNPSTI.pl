@@ -64,6 +64,7 @@ my $overwrite_flag = 0;
 my $quiet = 0;
 my $preserve_args = [@ARGV];
 my $DEBUG = 0;
+my $greedy_only = 0;
 
 #Library for tree data structure
 use tree;
@@ -89,13 +90,16 @@ GetOptions('t|treefile=s'            => \$treefile,
 	   'i|internal-nodes-only!'  => \$internal_nodes_only,
 	   'e|leaves-only!'          => \$leaves_only,
            'g|greedy!'               => \$greedy_flag,
+	   'o|skip-exhaustive!'      => \$greedy_only,
            'partial-suffix=s'        => \$partial_suffix,
 	   'overwrite!'              => \$overwrite_flag,
            'x|max-greedies=s'        => \$max_greedies,
            'u|quality-ratio=s'       => \$quality_ratio,
 	   'c|chance=s'              => \$equal_chance,
 	   'a|start-node=s'          => \$start_node,
-	   '<>'                      => sub {push(@analyze_nodes,$_[0])});
+	   '<>'                      => sub {push(@analyze_nodes,$_[0])},
+	   'debug:+'                 => \$DEBUG
+	  );
 
 #Set a max solution set size (i.e. number of SNPs) per phylogenetic tree branch
 #because the running time other wise is:
@@ -492,12 +496,13 @@ foreach my $node (@$node_list)
 	my $greedy_set_count = 0;
 	my $greedy_sol_num   = 0;
         my $num_added        = 0;
+	my $ratio            = 0;
 	do
 	  {
-	    $num_added = 0;
-	    my $ratio = 0;
+	    $num_added     = 0;
+	    $ratio         = 0;
             my $prev_ratio = 0;
-	    my $scores = {};
+	    my $scores     = {};
 	    $greedy_sol_num++;
 
 	    while(1)
@@ -511,6 +516,9 @@ foreach my $node (@$node_list)
 					  $verbose,
 					  $greedy_sol_num,
 					  $relevant_genomes);
+
+		if(!defined($ratio) || $ratio eq '')
+		  {error("getNextGreedySNP returned an undefined ratio.")}
 
 		$scores->{$greedy_snp_candidates->[-1]} = $ratio;
 
@@ -532,12 +540,13 @@ foreach my $node (@$node_list)
 	      }
 
 	    $greedy_set_count++;
-            my $greedymsg = "Greedy set $greedy_set_count: \[" .
-                              join(',',
-                                   map {"[$snp_names->[$optimized_snps->[$_]->[0]]]:" .
-                                        "($scores->{$_})"}
-                                     @$greedy_snp_candidates) .
-                              "].\n";
+            my $greedymsg =
+	      "Greedy set $greedy_set_count: \[" .
+		join(',',
+		     map {"[$snp_names->[$optimized_snps->[$_]->[0]]]:" .
+			    "($scores->{$_})"}
+		     @$greedy_snp_candidates) .
+		       "].\n";
 	    verbose(1,$greedymsg);
             print PRTL $greedymsg if($partial_suffix ne '');
 
@@ -545,9 +554,16 @@ foreach my $node (@$node_list)
 	    $greedy_snp_candidates = [];
 	  }
 	    while(scalar(@$relevant_optimal_snps) &&
-		  (($num_greedies < $max_greedies || $max_greedies == 0) &&
-		   ($num_added > 0 || $quality_ratio == 0)));
-print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $max_greedies || $max_greedies == 0) && ($num_added > 1 || $quality_ratio == 0))\n");
+		  ($num_added > 0 || ($num_added == 0 && $ratio == 1)) &&
+		  ($num_greedies < $max_greedies || $max_greedies == 0));
+print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && ($num_added > 0 || ($num_added == 0 && $ratio == 1)) && ($num_greedies < $max_greedies || $max_greedies == 0)\n") if ($DEBUG);
+#	    while(scalar(@$relevant_optimal_snps) &&
+#		  (($num_greedies < $max_greedies || $max_greedies == 0) &&
+#		   (($num_added > 0 || ($num_added == 0 && $ratio == 1)) ||
+#		    $quality_ratio == 0)));
+#print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $max_greedies || $max_greedies == 0) && ($num_added > 0 || $quality_ratio == 0))\n") if ($DEBUG);
+
+
 	#I know there are places where SNP order is important.  I can't
 	#remember where that is though, so I'm going to sort the greedies here
 	#just to be safe.
@@ -559,8 +575,13 @@ print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $m
                      map {$snp_names->[$optimized_snps->[$_]->[0]]}
                      @$final_greedy_snp_candidates) .
                 "].\n";
-	verbose($greedymsg,"Beginning exhaustive search of the greedy SNPs.");
+	verbose($greedymsg);
         print PRTL $greedymsg if($partial_suffix ne '');
+
+	if($greedy_only)
+	  {exit(0)}
+
+	verbose("Beginning exhaustive search of the greedy SNPs.");
       }
 
     verbose("SELECTED ANALYSIS SNPS:\n\t",
@@ -602,7 +623,7 @@ print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $m
 
 	$num_solns_per_size = 0;
 
-	verbose("Call to GetNextCombo([@current_set],$set_size,",scalar(@$final_greedy_snp_candidates),")") if($DEBUG);
+	verbose("Call to GetNextCombo([@current_set],$set_size,",scalar(@$final_greedy_snp_candidates),")") if($DEBUG > 1);
 
 	#While an unseen combination of SNPs based on n choose r still exists
 	#at the current set size (n = $num_SNPs, r = $set_size)
@@ -791,7 +812,7 @@ print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $m
 		  }
 	      }
 
-	    verbose("Call to GetNextCombo([@current_set],$set_size,",scalar(@$final_greedy_snp_candidates),")") if($DEBUG);
+	    verbose("Call to GetNextCombo([@current_set],$set_size,",scalar(@$final_greedy_snp_candidates),")") if($DEBUG > 1);
 	  }
 
 	#This last update will be useful if the last combination is a solution
@@ -1302,7 +1323,7 @@ sub GetNextCombo
     #has increased since the last combo
     if(scalar(@$combo) == 0 || scalar(@$combo) != $set_size)
       {
-	verbose("Initializing combo.") if ($DEBUG);
+	verbose("Initializing combo.") if ($DEBUG > 1);
 	#Empty the combo
 	@$combo = ();
 	#Fill it with a sequence of numbers starting with 0
@@ -1316,12 +1337,12 @@ sub GetNextCombo
     my $upper_lim = $pool_size - 1;
     my $cur_index = $#{$combo};
 
-    verbose("Upper limit: $upper_lim.\nCurrent Index: $cur_index") if ($DEBUG);
+    verbose("Upper limit: $upper_lim.\nCurrent Index: $cur_index") if ($DEBUG > 1);
     #Increment the last number of the combination if it is below the limit and
     #return true
     if($combo->[$cur_index] < $upper_lim)
       {
-	verbose("Incrementing value at index $cur_index because ($combo->[$cur_index] < $upper_lim).") if ($DEBUG);
+	verbose("Incrementing value at index $cur_index because ($combo->[$cur_index] < $upper_lim).") if ($DEBUG > 1);
         $combo->[$cur_index]++;
         return(1);
       }
@@ -1334,10 +1355,10 @@ sub GetNextCombo
         $upper_lim--;
         $cur_index--;
 	verbose("Upper limit: $upper_lim.\nCurrent Index: $cur_index")
-	  if ($DEBUG);
+	  if ($DEBUG > 1);
       }
 
-    verbose("Incrementing value at index $cur_index.") if ($DEBUG);
+    verbose("Incrementing value at index $cur_index.") if ($DEBUG > 1);
 
     #Increment the last number out of the above loop
     $combo->[$cur_index]++;
@@ -1345,7 +1366,7 @@ sub GetNextCombo
     #For every number in the combination after the one above
     foreach(($cur_index+1)..$#{$combo})
       {
-	verbose("Setting subsequent values.") if ($DEBUG);
+	verbose("Setting subsequent values.") if ($DEBUG > 1);
 	#Set its value equal to the one before it plus one
 	$combo->[$_] = $combo->[$_-1]+1;
       }
@@ -1353,7 +1374,7 @@ sub GetNextCombo
     #If we've exceded the pool size on the last number of the combination
     if($combo->[-1] > $pool_size)
       {
-	verbose("Ending because we finished the pool size: ($combo->[-1] > $pool_size).") if ($DEBUG);
+	verbose("Ending because we finished the pool size: ($combo->[-1] > $pool_size).") if ($DEBUG > 1);
 	#Return false
 	return(0);
       }
@@ -1876,6 +1897,10 @@ CLUSTER USAGE: See the "HOW TO PARALLELIZE SNPSTI" section of the --help output.
                     first and then do a second run using the command line to
                     list the nodes desired to be analyzed to solve the
                     remaining nodes exhaustively.
+     -o   OPTIONAL  [Off] Skip the exhaustive search.  This option only works
+                    if -g is supplied.  Note, you should use this option along
+                    with --partial-suffix in order to save your greedy reult
+                    output.
      -x   OPTIONAL  [20] Maximum number of greedily selected SNPs to
                     exhaustively search.  Note, the default value is only used
                     if -g is supplied.  If this value is explicitly set on the
@@ -1906,6 +1931,10 @@ CLUSTER USAGE: See the "HOW TO PARALLELIZE SNPSTI" section of the --help output.
                                 storing partial greedy solutions.
      --overwrite       OPTIONAL [Off] Overwrite existing partial greedy
                                 solutions files.
+     --debug           OPTIONAL [Off] Get debug output on STDERR to help
+                                diagnose problems.  May be set to a positive
+                                integer or supplied multiple times to increase
+                                the amount of debug output.
 end
   }
 
