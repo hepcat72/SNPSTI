@@ -7,7 +7,7 @@
 #Copyright 2008
 
 #These variables (in main) are used by getVersion() and usage()
-my $software_version_number = '1.5';
+my $software_version_number = '1.6';
 my $created_on_date         = '7/10/2011';
 
 ##
@@ -29,6 +29,8 @@ my $version             = 0;
 my $overwrite           = 0;
 my $noheader            = 0;
 my $center_value        = 0;
+my $num_categories      = 5;
+my $ambig_val           = '.';
 
 #These variables (in main) are used by the following subroutines:
 #verbose, error, warning, debug, getCommand, quit, and usage
@@ -355,6 +357,19 @@ if(scalar(@$cutoffs) == 0)
   {
     error("--cutoffs is a required option.");
     quit(-7);
+  }
+else
+  {
+    $num_categories = scalar(@$cutoffs) + 1;
+    if($num_categories == 2)
+      {$ambig_val = 'W'}
+    elsif($num_categories == 3)
+      {$ambig_val = 'D'}
+    elsif($num_categories == 4)
+      {$ambig_val = 'N'}
+    elsif($num_categories == 5)
+      {$ambig_val = '.'}
+    #Cases that are too large are caught below by $hardcnt
   }
 #I'm going to assume that the cutoffs supplied are numeric
 debug("Raw cutoff values: [",join(',',@$cutoffs),"].");
@@ -705,7 +720,7 @@ foreach my $input_file_set (@input_files)
 			   {
 			     if($val eq '')
 			       {
-				 $outval = '.';
+				 $outval = $ambig_val;
 				 last;
 			       }
 			     debug("Is $val <(=) $cutoff?");
