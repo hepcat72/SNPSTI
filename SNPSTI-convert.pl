@@ -7,7 +7,7 @@
 #Copyright 2008
 
 #These variables (in main) are used by getVersion() and usage()
-my $software_version_number = '1.6';
+my $software_version_number = '1.7';
 my $created_on_date         = '7/10/2011';
 
 ##
@@ -680,16 +680,7 @@ foreach my $input_file_set (@input_files)
 
 	    print($sample);
 
-	    @vals = split(/\s/,$_);
-
-	    #The split above ignores trailing spaces, so I need to throw on
-	    #extras to fill in arrays created from lines ending with a space
-	    if(/( +)$/)
-	      {
-		my $num_to_add = length($1);
-		foreach(1..$num_to_add)
-		  {push(@vals,'')}
-	      }
+	    @vals = split(/\s/,$_,-1);
 
 	    if($num_cols && $num_cols != scalar(@vals))
 	      {
