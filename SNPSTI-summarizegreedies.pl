@@ -6,7 +6,7 @@
 #Center for Computational Research
 #Copyright 2008
 #These variables (in main) are used by getVersion() and usage()
-my $software_version_number = '1.5';
+my $software_version_number = '1.7';
 my $created_on_date         = '3/27/2012';
 
 ##
@@ -471,8 +471,11 @@ if(!defined($outfile_suffix))
 	  "Num Locus 1 States Targets Exist in\t",
 	  "Num Locus 2 States Targets Exist in\tLocus 1\t",
 	  "Score Locus 1\tLocus 2\tScore Locus 2\t","States(Targets/Total)\t",
-	  "Call Locus 1\t","Call Locus 2\t","Specificity Combined\t",
-	  "Sensitivity Combined\t","Specificity Locus 1\t",
+	  "Call Locus 1\t","Call Locus 2\t",
+	  "Specificity Combined (and logic)\t",
+	  "Sensitivity Combined (and logic)\t",
+	  "Specificity Combined (or logic)\t",
+	  "Sensitivity Combined (or logic)\t","Specificity Locus 1\t",
 	  "Sensitivity Locus 1\t","Specificity Locus 2\t",
 	  "Sensitivity Locus 2","\n");
   }
@@ -804,7 +807,7 @@ foreach my $input_file_set (@input_files)
 	    #state, count the number of target samples and the total number of
 	    #samples
 	    elsif(($size == 1) &&
-		  /^ ([^ :]+): (\S+) \(real: (\d+)\/(\d+), no data: (\d+)\/(\d+)/)
+		  /^ ([^ ]+): (\S+) \(real: (\d+)\/(\d+), no data: (\d+)\/(\d+)/)
 	      {
 		$hash->{$iteration}->{$size}->{LOCUS} = $1;
 		if($2 eq 'gap')
@@ -821,7 +824,7 @@ foreach my $input_file_set (@input_files)
 		debug("State: [$1,$state1,$3,$4,$5,$6].");
 	      }
 	    elsif(($size == 2) &&
-		  /^  ([^ :]+): (\S+) \(real: (\d+)\/(\d+), no data: (\d+)\/(\d+)/)
+		  /^  ([^ ]+): (\S+) \(real: (\d+)\/(\d+), no data: (\d+)\/(\d+)/)
 	      {
 		$hash->{$iteration}->{$size}->{LOCUS} = $1;
 		if($2 eq 'gap')
@@ -836,7 +839,7 @@ foreach my $input_file_set (@input_files)
 		debug("State: [$1,$state1$state2,$3,$4,$5,$6].");
 	      }
 	    elsif(($size == 2) &&
-		  /^ ([^ :]+): (\S+) \(real: (\d+)\/(\d+), no data: (\d+)\/(\d+)/)
+		  /^ ([^ ]+): (\S+) \(real: (\d+)\/(\d+), no data: (\d+)\/(\d+)/)
 	      {
 		#[[locus name,value,num real targets,real total,num no data
 		#  targets,total no data],...]
@@ -872,6 +875,11 @@ foreach my $input_file_set (@input_files)
 		debug("Stopping partial file parse.");
 		$done = 1;
 		last;
+	      }
+	    elsif($_ !~ /GREEDY ITERATION|^\s/)
+	      {
+		chomp;
+		error("Unable to parse line: [$_].");
 	      }
 	  }
 
@@ -978,7 +986,10 @@ foreach my $input_file_set (@input_files)
 		  "Num Locus 2 States Targets Exist in\tLocus 1\t",
 		  "Score Locus 1\tLocus 2\tScore Locus 2\t",
 		  "States(Targets/Total)\t","Call Locus 1\t","Call Locus 2\t",
-		  "Specificity Combined\t","Sensitivity Combined\t",
+		  "Specificity Combined (and logic)\t",
+		  "Sensitivity Combined (and logic)\t",
+		  "Specificity Combined (or logic)\t",
+		  "Sensitivity Combined (or logic)\t",
 		  "Specificity Locus 1\t","Sensitivity Locus 1\t",
 		  "Specificity Locus 2\t","Sensitivity Locus 2","\n");
 	  }
@@ -2240,13 +2251,16 @@ sub getSensitivitySpecificity
     my $node_size    = $_[2]; #From $desc_hash->{$node}->{NUM}
     my $extras_array = [];
 
-    my $first_time         = 1;
-    my $num_targets_state1 = 0;
-    my $total_state1       = 0;
-    my $num_targets_state2 = 0;
-    my $total_state2       = 1; #Def to 1 so no div. by 0 if no state2 exists
-    my $state1             = '';
-    my $state2             = '';
+    my $first_time            = 1;
+    my $num_targets_state1    = 0;
+    my $total_state1          = 0;
+    my $num_targets_state2    = 0;
+    my $total_state2          = 1; #Default to 1 so no div. by 0 if no state2
+                                   #exists
+    my $num_targets_state1or2 = 0;
+    my $total_state1or2       = 0;
+    my $state1                = '';
+    my $state2                = '';
 
     #Sort by descending numerator
     foreach my $instate (sort {$b->[2] <=> $a->[2] || $a->[3] <=> $b->[3]}
@@ -2296,8 +2310,10 @@ sub getSensitivitySpecificity
 	if($state_str =~ /^$state1/)
 	  {
 	    debug("Adding state1's numer $numer and denom $denom.");
-	    $num_targets_state1 += $numer;
-	    $total_state1       += $denom;
+	    $num_targets_state1    += $numer;
+	    $total_state1          += $denom;
+	    $num_targets_state1or2 += $numer;
+	    $total_state1or2       += $denom;
 	  }
 
 	#If there is a second locus
@@ -2312,6 +2328,13 @@ sub getSensitivitySpecificity
 		debug("Adding state2's numer $numer and denom $denom.");
 		$num_targets_state2 += $numer;
 		$total_state2       += $denom;
+
+		#If these weren't added already, add them
+		if($state_str !~ /^$state1/)
+		  {
+		    $num_targets_state1or2 += $numer;
+		    $total_state1or2       += $denom;
+		  }
 	      }
 	  }
 
@@ -2321,7 +2344,9 @@ sub getSensitivitySpecificity
     debug("Result of locus 2 spec & sens: [$num_targets_state2/$total_state2 ",
 	  "& $num_targets_state2/$node_size].");
 
-    push(@$extras_array,($num_targets_state1/$total_state1,
+    push(@$extras_array,($num_targets_state1or2/$total_state1or2,
+			 $num_targets_state1or2/$node_size,
+			 $num_targets_state1/$total_state1,
 			 $num_targets_state1/$node_size,
 			 ($num_targets_state2/$total_state2 || ""),
 			 ($num_targets_state2/$node_size) || ""));
