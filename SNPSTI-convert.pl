@@ -682,7 +682,7 @@
 #<http://www.gnu.org/philosophy/why-not-lgpl.html>.
 
 #These variables (in main) are used by getVersion() and usage()
-my $software_version_number = '1.8';
+my $software_version_number = '1.9';
 my $created_on_date         = '7/10/2011';
 
 ##
@@ -1529,11 +1529,14 @@ Center for Computational Research
 Buffalo, NY 14203
 rwleach\@ccr.buffalo.edu
 
-* WHAT IS THIS: DESCRIBE THE PROGRAM HERE
+* WHAT IS THIS: This script converts numeric data into categorical data using
+                cutoffs supplied.  Using ambiguous DNA characters, one can
+                create soft-cutoff ranges where data points belong to both
+                enighboring categories.
 
-* INPUT FORMAT: DESCRIBE INPUT FILE FORMAT AND GIVE EXAMPLES HERE
+* INPUT FORMAT: Tab-delimited format.
 
-* OUTPUT FORMAT: DESCRIBE OUTPUT FORMAT HERE
+* OUTPUT FORMAT: Tab-delimited format.
 
 * ADVANCED FILE I/O FEATURES: Sets of input files, each with different output
                               directories can be supplied.  Supply each file
