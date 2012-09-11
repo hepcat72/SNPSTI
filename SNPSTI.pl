@@ -4,9 +4,684 @@
 #in low_memory mode with the -l option (slower, but uses less memory)
 
 #Robert W. Leach
-#4/12/04
-#Los Alamos National Laboratory
-#Copyright 2004
+#9/11/2012
+#Center for Computational Research
+#Copyright 2012
+
+#                    GNU GENERAL PUBLIC LICENSE
+#                       Version 3, 29 June 2007
+#
+# Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
+# Everyone is permitted to copy and distribute verbatim copies
+# of this license document, but changing it is not allowed.
+#
+#                            Preamble
+#
+#  The GNU General Public License is a free, copyleft license for
+#software and other kinds of works.
+#
+#  The licenses for most software and other practical works are designed
+#to take away your freedom to share and change the works.  By contrast,
+#the GNU General Public License is intended to guarantee your freedom to
+#share and change all versions of a program--to make sure it remains free
+#software for all its users.  We, the Free Software Foundation, use the
+#GNU General Public License for most of our software; it applies also to
+#any other work released this way by its authors.  You can apply it to
+#your programs, too.
+#
+#  When we speak of free software, we are referring to freedom, not
+#price.  Our General Public Licenses are designed to make sure that you
+#have the freedom to distribute copies of free software (and charge for
+#them if you wish), that you receive source code or can get it if you
+#want it, that you can change the software or use pieces of it in new
+#free programs, and that you know you can do these things.
+#
+#  To protect your rights, we need to prevent others from denying you
+#these rights or asking you to surrender the rights.  Therefore, you have
+#certain responsibilities if you distribute copies of the software, or if
+#you modify it: responsibilities to respect the freedom of others.
+#
+#  For example, if you distribute copies of such a program, whether
+#gratis or for a fee, you must pass on to the recipients the same
+#freedoms that you received.  You must make sure that they, too, receive
+#or can get the source code.  And you must show them these terms so they
+#know their rights.
+#
+#  Developers that use the GNU GPL protect your rights with two steps:
+#(1) assert copyright on the software, and (2) offer you this License
+#giving you legal permission to copy, distribute and/or modify it.
+#
+#  For the developers' and authors' protection, the GPL clearly explains
+#that there is no warranty for this free software.  For both users' and
+#authors' sake, the GPL requires that modified versions be marked as
+#changed, so that their problems will not be attributed erroneously to
+#authors of previous versions.
+#
+#  Some devices are designed to deny users access to install or run
+#modified versions of the software inside them, although the manufacturer
+#can do so.  This is fundamentally incompatible with the aim of
+#protecting users' freedom to change the software.  The systematic
+#pattern of such abuse occurs in the area of products for individuals to
+#use, which is precisely where it is most unacceptable.  Therefore, we
+#have designed this version of the GPL to prohibit the practice for those
+#products.  If such problems arise substantially in other domains, we
+#stand ready to extend this provision to those domains in future versions
+#of the GPL, as needed to protect the freedom of users.
+#
+#  Finally, every program is threatened constantly by software patents.
+#States should not allow patents to restrict development and use of
+#software on general-purpose computers, but in those that do, we wish to
+#avoid the special danger that patents applied to a free program could
+#make it effectively proprietary.  To prevent this, the GPL assures that
+#patents cannot be used to render the program non-free.
+#
+#  The precise terms and conditions for copying, distribution and
+#modification follow.
+#
+#                       TERMS AND CONDITIONS
+#
+#  0. Definitions.
+#
+#  "This License" refers to version 3 of the GNU General Public License.
+#
+#  "Copyright" also means copyright-like laws that apply to other kinds of
+#works, such as semiconductor masks.
+#
+#  "The Program" refers to any copyrightable work licensed under this
+#License.  Each licensee is addressed as "you".  "Licensees" and
+#"recipients" may be individuals or organizations.
+#
+#  To "modify" a work means to copy from or adapt all or part of the work
+#in a fashion requiring copyright permission, other than the making of an
+#exact copy.  The resulting work is called a "modified version" of the
+#earlier work or a work "based on" the earlier work.
+#
+#  A "covered work" means either the unmodified Program or a work based
+#on the Program.
+#
+#  To "propagate" a work means to do anything with it that, without
+#permission, would make you directly or secondarily liable for
+#infringement under applicable copyright law, except executing it on a
+#computer or modifying a private copy.  Propagation includes copying,
+#distribution (with or without modification), making available to the
+#public, and in some countries other activities as well.
+#
+#  To "convey" a work means any kind of propagation that enables other
+#parties to make or receive copies.  Mere interaction with a user through
+#a computer network, with no transfer of a copy, is not conveying.
+#
+#  An interactive user interface displays "Appropriate Legal Notices"
+#to the extent that it includes a convenient and prominently visible
+#feature that (1) displays an appropriate copyright notice, and (2)
+#tells the user that there is no warranty for the work (except to the
+#extent that warranties are provided), that licensees may convey the
+#work under this License, and how to view a copy of this License.  If
+#the interface presents a list of user commands or options, such as a
+#menu, a prominent item in the list meets this criterion.
+#
+#  1. Source Code.
+#
+#  The "source code" for a work means the preferred form of the work
+#for making modifications to it.  "Object code" means any non-source
+#form of a work.
+#
+#  A "Standard Interface" means an interface that either is an official
+#standard defined by a recognized standards body, or, in the case of
+#interfaces specified for a particular programming language, one that
+#is widely used among developers working in that language.
+#
+#  The "System Libraries" of an executable work include anything, other
+#than the work as a whole, that (a) is included in the normal form of
+#packaging a Major Component, but which is not part of that Major
+#Component, and (b) serves only to enable use of the work with that
+#Major Component, or to implement a Standard Interface for which an
+#implementation is available to the public in source code form.  A
+#"Major Component", in this context, means a major essential component
+#(kernel, window system, and so on) of the specific operating system
+#(if any) on which the executable work runs, or a compiler used to
+#produce the work, or an object code interpreter used to run it.
+#
+#  The "Corresponding Source" for a work in object code form means all
+#the source code needed to generate, install, and (for an executable
+#work) run the object code and to modify the work, including scripts to
+#control those activities.  However, it does not include the work's
+#System Libraries, or general-purpose tools or generally available free
+#programs which are used unmodified in performing those activities but
+#which are not part of the work.  For example, Corresponding Source
+#includes interface definition files associated with source files for
+#the work, and the source code for shared libraries and dynamically
+#linked subprograms that the work is specifically designed to require,
+#such as by intimate data communication or control flow between those
+#subprograms and other parts of the work.
+#
+#  The Corresponding Source need not include anything that users
+#can regenerate automatically from other parts of the Corresponding
+#Source.
+#
+#  The Corresponding Source for a work in source code form is that
+#same work.
+#
+#  2. Basic Permissions.
+#
+#  All rights granted under this License are granted for the term of
+#copyright on the Program, and are irrevocable provided the stated
+#conditions are met.  This License explicitly affirms your unlimited
+#permission to run the unmodified Program.  The output from running a
+#covered work is covered by this License only if the output, given its
+#content, constitutes a covered work.  This License acknowledges your
+#rights of fair use or other equivalent, as provided by copyright law.
+#
+#  You may make, run and propagate covered works that you do not
+#convey, without conditions so long as your license otherwise remains
+#in force.  You may convey covered works to others for the sole purpose
+#of having them make modifications exclusively for you, or provide you
+#with facilities for running those works, provided that you comply with
+#the terms of this License in conveying all material for which you do
+#not control copyright.  Those thus making or running the covered works
+#for you must do so exclusively on your behalf, under your direction
+#and control, on terms that prohibit them from making any copies of
+#your copyrighted material outside their relationship with you.
+#
+#  Conveying under any other circumstances is permitted solely under
+#the conditions stated below.  Sublicensing is not allowed; section 10
+#makes it unnecessary.
+#
+#  3. Protecting Users' Legal Rights From Anti-Circumvention Law.
+#
+#  No covered work shall be deemed part of an effective technological
+#measure under any applicable law fulfilling obligations under article
+#11 of the WIPO copyright treaty adopted on 20 December 1996, or
+#similar laws prohibiting or restricting circumvention of such
+#measures.
+#
+#  When you convey a covered work, you waive any legal power to forbid
+#circumvention of technological measures to the extent such circumvention
+#is effected by exercising rights under this License with respect to
+#the covered work, and you disclaim any intention to limit operation or
+#modification of the work as a means of enforcing, against the work's
+#users, your or third parties' legal rights to forbid circumvention of
+#technological measures.
+#
+#  4. Conveying Verbatim Copies.
+#
+#  You may convey verbatim copies of the Program's source code as you
+#receive it, in any medium, provided that you conspicuously and
+#appropriately publish on each copy an appropriate copyright notice;
+#keep intact all notices stating that this License and any
+#non-permissive terms added in accord with section 7 apply to the code;
+#keep intact all notices of the absence of any warranty; and give all
+#recipients a copy of this License along with the Program.
+#
+#  You may charge any price or no price for each copy that you convey,
+#and you may offer support or warranty protection for a fee.
+#
+#  5. Conveying Modified Source Versions.
+#
+#  You may convey a work based on the Program, or the modifications to
+#produce it from the Program, in the form of source code under the
+#terms of section 4, provided that you also meet all of these conditions:
+#
+#    a) The work must carry prominent notices stating that you modified
+#    it, and giving a relevant date.
+#
+#    b) The work must carry prominent notices stating that it is
+#    released under this License and any conditions added under section
+#    7.  This requirement modifies the requirement in section 4 to
+#    "keep intact all notices".
+#
+#    c) You must license the entire work, as a whole, under this
+#    License to anyone who comes into possession of a copy.  This
+#    License will therefore apply, along with any applicable section 7
+#    additional terms, to the whole of the work, and all its parts,
+#    regardless of how they are packaged.  This License gives no
+#    permission to license the work in any other way, but it does not
+#    invalidate such permission if you have separately received it.
+#
+#    d) If the work has interactive user interfaces, each must display
+#    Appropriate Legal Notices; however, if the Program has interactive
+#    interfaces that do not display Appropriate Legal Notices, your
+#    work need not make them do so.
+#
+#  A compilation of a covered work with other separate and independent
+#works, which are not by their nature extensions of the covered work,
+#and which are not combined with it such as to form a larger program,
+#in or on a volume of a storage or distribution medium, is called an
+#"aggregate" if the compilation and its resulting copyright are not
+#used to limit the access or legal rights of the compilation's users
+#beyond what the individual works permit.  Inclusion of a covered work
+#in an aggregate does not cause this License to apply to the other
+#parts of the aggregate.
+#
+#  6. Conveying Non-Source Forms.
+#
+#  You may convey a covered work in object code form under the terms
+#of sections 4 and 5, provided that you also convey the
+#machine-readable Corresponding Source under the terms of this License,
+#in one of these ways:
+#
+#    a) Convey the object code in, or embodied in, a physical product
+#    (including a physical distribution medium), accompanied by the
+#    Corresponding Source fixed on a durable physical medium
+#    customarily used for software interchange.
+#
+#    b) Convey the object code in, or embodied in, a physical product
+#    (including a physical distribution medium), accompanied by a
+#    written offer, valid for at least three years and valid for as
+#    long as you offer spare parts or customer support for that product
+#    model, to give anyone who possesses the object code either (1) a
+#    copy of the Corresponding Source for all the software in the
+#    product that is covered by this License, on a durable physical
+#    medium customarily used for software interchange, for a price no
+#    more than your reasonable cost of physically performing this
+#    conveying of source, or (2) access to copy the
+#    Corresponding Source from a network server at no charge.
+#
+#    c) Convey individual copies of the object code with a copy of the
+#    written offer to provide the Corresponding Source.  This
+#    alternative is allowed only occasionally and noncommercially, and
+#    only if you received the object code with such an offer, in accord
+#    with subsection 6b.
+#
+#    d) Convey the object code by offering access from a designated
+#    place (gratis or for a charge), and offer equivalent access to the
+#    Corresponding Source in the same way through the same place at no
+#    further charge.  You need not require recipients to copy the
+#    Corresponding Source along with the object code.  If the place to
+#    copy the object code is a network server, the Corresponding Source
+#    may be on a different server (operated by you or a third party)
+#    that supports equivalent copying facilities, provided you maintain
+#    clear directions next to the object code saying where to find the
+#    Corresponding Source.  Regardless of what server hosts the
+#    Corresponding Source, you remain obligated to ensure that it is
+#    available for as long as needed to satisfy these requirements.
+#
+#    e) Convey the object code using peer-to-peer transmission, provided
+#    you inform other peers where the object code and Corresponding
+#    Source of the work are being offered to the general public at no
+#    charge under subsection 6d.
+#
+#  A separable portion of the object code, whose source code is excluded
+#from the Corresponding Source as a System Library, need not be
+#included in conveying the object code work.
+#
+#  A "User Product" is either (1) a "consumer product", which means any
+#tangible personal property which is normally used for personal, family,
+#or household purposes, or (2) anything designed or sold for incorporation
+#into a dwelling.  In determining whether a product is a consumer product,
+#doubtful cases shall be resolved in favor of coverage.  For a particular
+#product received by a particular user, "normally used" refers to a
+#typical or common use of that class of product, regardless of the status
+#of the particular user or of the way in which the particular user
+#actually uses, or expects or is expected to use, the product.  A product
+#is a consumer product regardless of whether the product has substantial
+#commercial, industrial or non-consumer uses, unless such uses represent
+#the only significant mode of use of the product.
+#
+#  "Installation Information" for a User Product means any methods,
+#procedures, authorization keys, or other information required to install
+#and execute modified versions of a covered work in that User Product from
+#a modified version of its Corresponding Source.  The information must
+#suffice to ensure that the continued functioning of the modified object
+#code is in no case prevented or interfered with solely because
+#modification has been made.
+#
+#  If you convey an object code work under this section in, or with, or
+#specifically for use in, a User Product, and the conveying occurs as
+#part of a transaction in which the right of possession and use of the
+#User Product is transferred to the recipient in perpetuity or for a
+#fixed term (regardless of how the transaction is characterized), the
+#Corresponding Source conveyed under this section must be accompanied
+#by the Installation Information.  But this requirement does not apply
+#if neither you nor any third party retains the ability to install
+#modified object code on the User Product (for example, the work has
+#been installed in ROM).
+#
+#  The requirement to provide Installation Information does not include a
+#requirement to continue to provide support service, warranty, or updates
+#for a work that has been modified or installed by the recipient, or for
+#the User Product in which it has been modified or installed.  Access to a
+#network may be denied when the modification itself materially and
+#adversely affects the operation of the network or violates the rules and
+#protocols for communication across the network.
+#
+#  Corresponding Source conveyed, and Installation Information provided,
+#in accord with this section must be in a format that is publicly
+#documented (and with an implementation available to the public in
+#source code form), and must require no special password or key for
+#unpacking, reading or copying.
+#
+#  7. Additional Terms.
+#
+#  "Additional permissions" are terms that supplement the terms of this
+#License by making exceptions from one or more of its conditions.
+#Additional permissions that are applicable to the entire Program shall
+#be treated as though they were included in this License, to the extent
+#that they are valid under applicable law.  If additional permissions
+#apply only to part of the Program, that part may be used separately
+#under those permissions, but the entire Program remains governed by
+#this License without regard to the additional permissions.
+#
+#  When you convey a copy of a covered work, you may at your option
+#remove any additional permissions from that copy, or from any part of
+#it.  (Additional permissions may be written to require their own
+#removal in certain cases when you modify the work.)  You may place
+#additional permissions on material, added by you to a covered work,
+#for which you have or can give appropriate copyright permission.
+#
+#  Notwithstanding any other provision of this License, for material you
+#add to a covered work, you may (if authorized by the copyright holders of
+#that material) supplement the terms of this License with terms:
+#
+#    a) Disclaiming warranty or limiting liability differently from the
+#    terms of sections 15 and 16 of this License; or
+#
+#    b) Requiring preservation of specified reasonable legal notices or
+#    author attributions in that material or in the Appropriate Legal
+#    Notices displayed by works containing it; or
+#
+#    c) Prohibiting misrepresentation of the origin of that material, or
+#    requiring that modified versions of such material be marked in
+#    reasonable ways as different from the original version; or
+#
+#    d) Limiting the use for publicity purposes of names of licensors or
+#    authors of the material; or
+#
+#    e) Declining to grant rights under trademark law for use of some
+#    trade names, trademarks, or service marks; or
+#
+#    f) Requiring indemnification of licensors and authors of that
+#    material by anyone who conveys the material (or modified versions of
+#    it) with contractual assumptions of liability to the recipient, for
+#    any liability that these contractual assumptions directly impose on
+#    those licensors and authors.
+#
+#  All other non-permissive additional terms are considered "further
+#restrictions" within the meaning of section 10.  If the Program as you
+#received it, or any part of it, contains a notice stating that it is
+#governed by this License along with a term that is a further
+#restriction, you may remove that term.  If a license document contains
+#a further restriction but permits relicensing or conveying under this
+#License, you may add to a covered work material governed by the terms
+#of that license document, provided that the further restriction does
+#not survive such relicensing or conveying.
+#
+#  If you add terms to a covered work in accord with this section, you
+#must place, in the relevant source files, a statement of the
+#additional terms that apply to those files, or a notice indicating
+#where to find the applicable terms.
+#
+#  Additional terms, permissive or non-permissive, may be stated in the
+#form of a separately written license, or stated as exceptions;
+#the above requirements apply either way.
+#
+#  8. Termination.
+#
+#  You may not propagate or modify a covered work except as expressly
+#provided under this License.  Any attempt otherwise to propagate or
+#modify it is void, and will automatically terminate your rights under
+#this License (including any patent licenses granted under the third
+#paragraph of section 11).
+#
+#  However, if you cease all violation of this License, then your
+#license from a particular copyright holder is reinstated (a)
+#provisionally, unless and until the copyright holder explicitly and
+#finally terminates your license, and (b) permanently, if the copyright
+#holder fails to notify you of the violation by some reasonable means
+#prior to 60 days after the cessation.
+#
+#  Moreover, your license from a particular copyright holder is
+#reinstated permanently if the copyright holder notifies you of the
+#violation by some reasonable means, this is the first time you have
+#received notice of violation of this License (for any work) from that
+#copyright holder, and you cure the violation prior to 30 days after
+#your receipt of the notice.
+#
+#  Termination of your rights under this section does not terminate the
+#licenses of parties who have received copies or rights from you under
+#this License.  If your rights have been terminated and not permanently
+#reinstated, you do not qualify to receive new licenses for the same
+#material under section 10.
+#
+#  9. Acceptance Not Required for Having Copies.
+#
+#  You are not required to accept this License in order to receive or
+#run a copy of the Program.  Ancillary propagation of a covered work
+#occurring solely as a consequence of using peer-to-peer transmission
+#to receive a copy likewise does not require acceptance.  However,
+#nothing other than this License grants you permission to propagate or
+#modify any covered work.  These actions infringe copyright if you do
+#not accept this License.  Therefore, by modifying or propagating a
+#covered work, you indicate your acceptance of this License to do so.
+#
+#  10. Automatic Licensing of Downstream Recipients.
+#
+#  Each time you convey a covered work, the recipient automatically
+#receives a license from the original licensors, to run, modify and
+#propagate that work, subject to this License.  You are not responsible
+#for enforcing compliance by third parties with this License.
+#
+#  An "entity transaction" is a transaction transferring control of an
+#organization, or substantially all assets of one, or subdividing an
+#organization, or merging organizations.  If propagation of a covered
+#work results from an entity transaction, each party to that
+#transaction who receives a copy of the work also receives whatever
+#licenses to the work the party's predecessor in interest had or could
+#give under the previous paragraph, plus a right to possession of the
+#Corresponding Source of the work from the predecessor in interest, if
+#the predecessor has it or can get it with reasonable efforts.
+#
+#  You may not impose any further restrictions on the exercise of the
+#rights granted or affirmed under this License.  For example, you may
+#not impose a license fee, royalty, or other charge for exercise of
+#rights granted under this License, and you may not initiate litigation
+#(including a cross-claim or counterclaim in a lawsuit) alleging that
+#any patent claim is infringed by making, using, selling, offering for
+#sale, or importing the Program or any portion of it.
+#
+#  11. Patents.
+#
+#  A "contributor" is a copyright holder who authorizes use under this
+#License of the Program or a work on which the Program is based.  The
+#work thus licensed is called the contributor's "contributor version".
+#
+#  A contributor's "essential patent claims" are all patent claims
+#owned or controlled by the contributor, whether already acquired or
+#hereafter acquired, that would be infringed by some manner, permitted
+#by this License, of making, using, or selling its contributor version,
+#but do not include claims that would be infringed only as a
+#consequence of further modification of the contributor version.  For
+#purposes of this definition, "control" includes the right to grant
+#patent sublicenses in a manner consistent with the requirements of
+#this License.
+#
+#  Each contributor grants you a non-exclusive, worldwide, royalty-free
+#patent license under the contributor's essential patent claims, to
+#make, use, sell, offer for sale, import and otherwise run, modify and
+#propagate the contents of its contributor version.
+#
+#  In the following three paragraphs, a "patent license" is any express
+#agreement or commitment, however denominated, not to enforce a patent
+#(such as an express permission to practice a patent or covenant not to
+#sue for patent infringement).  To "grant" such a patent license to a
+#party means to make such an agreement or commitment not to enforce a
+#patent against the party.
+#
+#  If you convey a covered work, knowingly relying on a patent license,
+#and the Corresponding Source of the work is not available for anyone
+#to copy, free of charge and under the terms of this License, through a
+#publicly available network server or other readily accessible means,
+#then you must either (1) cause the Corresponding Source to be so
+#available, or (2) arrange to deprive yourself of the benefit of the
+#patent license for this particular work, or (3) arrange, in a manner
+#consistent with the requirements of this License, to extend the patent
+#license to downstream recipients.  "Knowingly relying" means you have
+#actual knowledge that, but for the patent license, your conveying the
+#covered work in a country, or your recipient's use of the covered work
+#in a country, would infringe one or more identifiable patents in that
+#country that you have reason to believe are valid.
+#
+#  If, pursuant to or in connection with a single transaction or
+#arrangement, you convey, or propagate by procuring conveyance of, a
+#covered work, and grant a patent license to some of the parties
+#receiving the covered work authorizing them to use, propagate, modify
+#or convey a specific copy of the covered work, then the patent license
+#you grant is automatically extended to all recipients of the covered
+#work and works based on it.
+#
+#  A patent license is "discriminatory" if it does not include within
+#the scope of its coverage, prohibits the exercise of, or is
+#conditioned on the non-exercise of one or more of the rights that are
+#specifically granted under this License.  You may not convey a covered
+#work if you are a party to an arrangement with a third party that is
+#in the business of distributing software, under which you make payment
+#to the third party based on the extent of your activity of conveying
+#the work, and under which the third party grants, to any of the
+#parties who would receive the covered work from you, a discriminatory
+#patent license (a) in connection with copies of the covered work
+#conveyed by you (or copies made from those copies), or (b) primarily
+#for and in connection with specific products or compilations that
+#contain the covered work, unless you entered into that arrangement,
+#or that patent license was granted, prior to 28 March 2007.
+#
+#  Nothing in this License shall be construed as excluding or limiting
+#any implied license or other defenses to infringement that may
+#otherwise be available to you under applicable patent law.
+#
+#  12. No Surrender of Others' Freedom.
+#
+#  If conditions are imposed on you (whether by court order, agreement or
+#otherwise) that contradict the conditions of this License, they do not
+#excuse you from the conditions of this License.  If you cannot convey a
+#covered work so as to satisfy simultaneously your obligations under this
+#License and any other pertinent obligations, then as a consequence you may
+#not convey it at all.  For example, if you agree to terms that obligate you
+#to collect a royalty for further conveying from those to whom you convey
+#the Program, the only way you could satisfy both those terms and this
+#License would be to refrain entirely from conveying the Program.
+#
+#  13. Use with the GNU Affero General Public License.
+#
+#  Notwithstanding any other provision of this License, you have
+#permission to link or combine any covered work with a work licensed
+#under version 3 of the GNU Affero General Public License into a single
+#combined work, and to convey the resulting work.  The terms of this
+#License will continue to apply to the part which is the covered work,
+#but the special requirements of the GNU Affero General Public License,
+#section 13, concerning interaction through a network will apply to the
+#combination as such.
+#
+#  14. Revised Versions of this License.
+#
+#  The Free Software Foundation may publish revised and/or new versions of
+#the GNU General Public License from time to time.  Such new versions will
+#be similar in spirit to the present version, but may differ in detail to
+#address new problems or concerns.
+#
+#  Each version is given a distinguishing version number.  If the
+#Program specifies that a certain numbered version of the GNU General
+#Public License "or any later version" applies to it, you have the
+#option of following the terms and conditions either of that numbered
+#version or of any later version published by the Free Software
+#Foundation.  If the Program does not specify a version number of the
+#GNU General Public License, you may choose any version ever published
+#by the Free Software Foundation.
+#
+#  If the Program specifies that a proxy can decide which future
+#versions of the GNU General Public License can be used, that proxy's
+#public statement of acceptance of a version permanently authorizes you
+#to choose that version for the Program.
+#
+#  Later license versions may give you additional or different
+#permissions.  However, no additional obligations are imposed on any
+#author or copyright holder as a result of your choosing to follow a
+#later version.
+#
+#  15. Disclaimer of Warranty.
+#
+#  THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
+#APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
+#HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
+#OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
+#THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+#PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
+#IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
+#ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+#
+#  16. Limitation of Liability.
+#
+#  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+#WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
+#THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
+#GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
+#USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF
+#DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
+#PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),
+#EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
+#SUCH DAMAGES.
+#
+#  17. Interpretation of Sections 15 and 16.
+#
+#  If the disclaimer of warranty and limitation of liability provided
+#above cannot be given local legal effect according to their terms,
+#reviewing courts shall apply local law that most closely approximates
+#an absolute waiver of all civil liability in connection with the
+#Program, unless a warranty or assumption of liability accompanies a
+#copy of the Program in return for a fee.
+#
+#                     END OF TERMS AND CONDITIONS
+#
+#            How to Apply These Terms to Your New Programs
+#
+#  If you develop a new program, and you want it to be of the greatest
+#possible use to the public, the best way to achieve this is to make it
+#free software which everyone can redistribute and change under these terms.
+#
+#  To do so, attach the following notices to the program.  It is safest
+#to attach them to the start of each source file to most effectively
+#state the exclusion of warranty; and each file should have at least
+#the "copyright" line and a pointer to where the full notice is found.
+#
+#    <one line to give the program's name and a brief idea of what it does.>
+#    Copyright (C) <year>  <name of author>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#Also add information on how to contact you by electronic and paper mail.
+#
+#  If the program does terminal interaction, make it output a short
+#notice like this when it starts in an interactive mode:
+#
+#    <program>  Copyright (C) <year>  <name of author>
+#    This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
+#    This is free software, and you are welcome to redistribute it
+#    under certain conditions; type `show c' for details.
+#
+#The hypothetical commands `show w' and `show c' should show the appropriate
+#parts of the General Public License.  Of course, your program's commands
+#might be different; for a GUI interface, you would use an "about box".
+#
+#  You should also get your employer (if you work as a programmer) or school,
+#if any, to sign a "copyright disclaimer" for the program, if necessary.
+#For more information on this, and how to apply and follow the GNU GPL, see
+#<http://www.gnu.org/licenses/>.
+#
+#  The GNU General Public License does not permit incorporating your program
+#into proprietary programs.  If your program is a subroutine library, you
+#may consider it more useful to permit linking proprietary applications with
+#the library.  If this is what you want to do, use the GNU Lesser General
+#Public License instead of this License.  But first, please read
+#<http://www.gnu.org/philosophy/why-not-lgpl.html>.
 
 #USAGE: SNPSTI.pl -s SNP_infile -t Tree_infile [-v] [-h] [-m num] [-n num]
 #Execute SNPSTI.pl -h to see a description of this program
@@ -46,7 +721,6 @@ if(exists($ENV{SNPSTI_CLUSTER_TREE_PATH}))
 
 #Declare/initialize variables
 my $framesort_warning = 0;  #Global variable for isSolution
-#my $snp_data          = [];
 my $snp_names         = [];
 my $genome_names      = [];
 my $non_binary_nodes  = [];
@@ -65,6 +739,7 @@ my $quiet = 0;
 my $preserve_args = [@ARGV];
 my $DEBUG = 0;
 my $greedy_only = 0;
+my $scoring_function = 'original';
 
 #Library for tree data structure
 use tree;
@@ -90,6 +765,7 @@ GetOptions('t|treefile=s'            => \$treefile,
 	   'i|internal-nodes-only!'  => \$internal_nodes_only,
 	   'e|leaves-only!'          => \$leaves_only,
            'g|greedy!'               => \$greedy_flag,
+	   'w|scoring-function=s'    => \$scoring_function, #original,worst
 	   'o|skip-exhaustive!'      => \$greedy_only,
            'partial-suffix=s'        => \$partial_suffix,
 	   'overwrite!'              => \$overwrite_flag,
@@ -137,8 +813,6 @@ if($min_set_size_per_node > 1)
     sleep(2);
   }
 
-#$snp_data_buffer_size = $max_set_size_per_node * $low_memory_mode;
-
 #If they have asked for help
 if($help)
   {
@@ -171,12 +845,6 @@ if(($internal_nodes_only || $leaves_only) && $breadth_first_order)
 print STDERR ("Running on cluster node: [$host].\n") if($cluster_run);
 
 #Load and validate the SNP data (and set $snp_names and $genome_names arrays)
-#No memory sensitivity method
-#if(LoadSNPs($snp_data,$snp_names,$genome_names,$snpfile,$verbose,
-#Column hash buffer method
-#if(LoadSNPs($snp_names,$genome_names,$snpfile,$verbose,$snp_data_buffer,
-#	    $snp_data_buffer_size))
-#Column string buffer method
 if(LoadSNPs($snp_names,$genome_names,$snpfile,$verbose,$snp_data_buffer,
 	    $low_memory_mode))
   {
@@ -307,8 +975,6 @@ if($min_set_size_per_node > $num_SNPs)
 
 if($max_set_size_per_node > $num_optimal_snps)
   {$max_set_size_per_node = $num_optimal_snps}
-#if($max_set_size_per_node > $num_SNPs)
-#  {$max_set_size_per_node = $num_SNPs}
 
 #Error check and handle greedy options
 if(!$greedy_flag && ($max_greedies || $quality_ratio))
@@ -515,7 +1181,8 @@ foreach my $node (@$node_list)
 					  $snp_names,
 					  $verbose,
 					  $greedy_sol_num,
-					  $relevant_genomes);
+					  $relevant_genomes,
+					  $scoring_function);
 
 		if(!defined($ratio) || $ratio eq '')
 		  {error("getNextGreedySNP returned an undefined ratio.")}
@@ -556,12 +1223,14 @@ foreach my $node (@$node_list)
 	    while(scalar(@$relevant_optimal_snps) &&
 		  ($num_added > 0 || ($num_added == 0 && $ratio == 1)) &&
 		  ($num_greedies < $max_greedies || $max_greedies == 0));
-print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && ($num_added > 0 || ($num_added == 0 && $ratio == 1)) && ($num_greedies < $max_greedies || $max_greedies == 0)\n") if ($DEBUG);
-#	    while(scalar(@$relevant_optimal_snps) &&
-#		  (($num_greedies < $max_greedies || $max_greedies == 0) &&
-#		   (($num_added > 0 || ($num_added == 0 && $ratio == 1)) ||
-#		    $quality_ratio == 0)));
-#print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $max_greedies || $max_greedies == 0) && ($num_added > 0 || $quality_ratio == 0))\n") if ($DEBUG);
+
+	print STDERR ("DEBUG: ",scalar(@$relevant_optimal_snps),
+		      " && ($num_added > 0 || ($num_added == 0 && $ratio == ",
+		      "1)) && ($num_greedies < $max_greedies || ",
+		      "$max_greedies == 0)\n")
+	  if($DEBUG);
+
+	#print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && (($num_greedies < $max_greedies || $max_greedies == 0) && ($num_added > 0 || $quality_ratio == 0))\n") if ($DEBUG);
 
 
 	#I know there are places where SNP order is important.  I can't
@@ -611,19 +1280,12 @@ print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && ($num_added > 0 || (
 	#to the small_sets at the end of this loop
 	my $new_small_sets = [];
 
-	verbose("\nDOING SET SIZE: $set_size",#"  Estimated Time ",
-#		      "Remaining to completion: ",
-#		      timeRemainingEstimate($combos_so_far,
-#					    $num_SNPs,
-#					    $min_set_size_per_node,
-#					    $max_set_size_per_node,
-#					    scalar(@$node_list)),
-#		      " Seconds",
-	       );
+	verbose("\nDOING SET SIZE: $set_size");
 
 	$num_solns_per_size = 0;
 
-	verbose("Call to GetNextCombo([@current_set],$set_size,",scalar(@$final_greedy_snp_candidates),")") if($DEBUG > 1);
+	verbose("DEBUG: Call to GetNextCombo([@current_set],$set_size,",
+		scalar(@$final_greedy_snp_candidates),")") if($DEBUG > 1);
 
 	#While an unseen combination of SNPs based on n choose r still exists
 	#at the current set size (n = $num_SNPs, r = $set_size)
@@ -631,7 +1293,6 @@ print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && ($num_added > 0 || (
 			   $set_size,
 			   ($greedy_flag ?
 			    scalar(@$final_greedy_snp_candidates) :
-#			    $num_SNPs)))
 			    scalar(@$relevant_optimal_snps))))
 	  {
 	    $candidate_set = [];
@@ -719,15 +1380,15 @@ print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && ($num_added > 0 || (
 						   ->[$_])]})}
 				   @current_set]);
 
-#verbose("ALL ZEROES: EQUIVALENT SOLUTION TO: [",
-#	join(' ',map {$snp_names->[$_]} @$candidate_set),
-#	"]: [",
-#	join(' ',map {$snp_names->[$_]}
-#	     map {$optimized_snps->[$final_greedy_snp_candidates
-#				    ->[$current_set[$_]]]
-#		    ->[$equivalent_candidate_set->[$_]]}
-#	     (0..(scalar(@$equivalent_candidate_set) - 1))),
-#	"].");
+		#verbose("ALL ZEROES: EQUIVALENT SOLUTION TO: [",
+		#	join(' ',map {$snp_names->[$_]} @$candidate_set),
+		#	"]: [",
+		#	join(' ',map {$snp_names->[$_]}
+		#	    map {$optimized_snps->[$final_greedy_snp_candidates
+		#				    ->[$current_set[$_]]]
+		#		    ->[$equivalent_candidate_set->[$_]]}
+		#	     (0..(scalar(@$equivalent_candidate_set) - 1))),
+		#	"].");
 
 		while(GetNextIndepCombo($equivalent_candidate_set,
 					[map
@@ -759,7 +1420,7 @@ print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && ($num_added > 0 || (
 			      ->[$equivalent_candidate_set->[$_]]}
 		       (0..(scalar(@$equivalent_candidate_set) - 1))];
 
-#verbose("EQUIVALENT SOLUTION TO: [",join(' ',map {$snp_names->[$_]} @$candidate_set),"]: [",join(' ',map {$snp_names->[$_]} @$equivalent_solution),"].");
+		    #verbose("EQUIVALENT SOLUTION TO: [",join(' ',map {$snp_names->[$_]} @$candidate_set),"]: [",join(' ',map {$snp_names->[$_]} @$equivalent_solution),"].");
 
 		    $solution_array = [];
 
@@ -812,7 +1473,7 @@ print STDERR ("TEST: ",scalar(@$relevant_optimal_snps)," && ($num_added > 0 || (
 		  }
 	      }
 
-	    verbose("Call to GetNextCombo([@current_set],$set_size,",scalar(@$final_greedy_snp_candidates),")") if($DEBUG > 1);
+	    verbose("DEBUG: Call to GetNextCombo([@current_set],$set_size,",scalar(@$final_greedy_snp_candidates),")") if($DEBUG > 1);
 	  }
 
 	#This last update will be useful if the last combination is a solution
@@ -899,15 +1560,6 @@ sub isSolution
     ($snp,@$proposed_solution) = @{$_[0]};
 
     my $snp_data_buffer        = $_[1];  #Array of SNP strings
-#                                         #Array
-#                                         #containing SNP data columns as hashes
-#                                         #NOTE that this assumes the buffer to
-#                                         #contain all the SNPs in the proposed
-#                                         #solution, so the buffer must be
-#                                         #checked and initialized to ensure
-#                                         #this every time.  It should not be
-#                                         #done here because this sub is
-#                                         #recursive.
     my $genome_indexes         = $_[2];  #Array of genome indexes into the SNP
                                          #data buffer
     my $label_array            = $_[3];  #Array of genome labels indexed by
@@ -945,17 +1597,10 @@ sub isSolution
     my $genome_types    = []; #Indicates what label a genome well contains
     my $genome_wells    = [[],[],[],[],[],[]];  #Contains genome indexes based
                                                 #on the current SNP value
-#  #Contains genome SNP data split
-#                                                #by the current SNP values
-#    my $new_label_array = [[],[],[],[],[],[]];  #labels are split the same way
-#                                                #as genomes in the genome wells
-#                                                #for the next recursive call
-
     my($matched);
     #For each genome
     foreach my $genome (sort {$label_array->[$b] <=> $label_array->[$a]}
 			@$genome_indexes)
-#			(0..(scalar(@$snp_data_buffer) - 1)))
       {
 	my $snp_val = getSNP($snp_data_buffer,$genome,$snp);
 
@@ -1020,8 +1665,6 @@ sub isSolution
 
 	    #Push the current genome's SNP data and labels into the pseudo-well
 	    push(@{$genome_wells->[0]},$genome);
-#	    push(@{$genome_wells->[0]},$snp_data_buffer->[$genome]);
-#	    push(@{$new_label_array->[0]},$label_array->[$genome]);
 	  }
 	else
 	  {
@@ -1042,8 +1685,6 @@ sub isSolution
 
 		#Push the current genome's SNP data and labels into the A well
 		push(@{$genome_wells->[1]},$genome);
-#		push(@{$genome_wells->[1]},$snp_data_buffer->[$genome]);
-#		push(@{$new_label_array->[1]},$label_array->[$genome]);
 	      }
 	    #If the first snp value from the proposed solution contains a T or
 	    #2 for this genome
@@ -1062,8 +1703,6 @@ sub isSolution
 
 		#Push the current genome's SNP data and labels into the T well
 		push(@{$genome_wells->[2]},$genome);
-#		push(@{$genome_wells->[2]},$snp_data_buffer->[$genome]);
-#		push(@{$new_label_array->[2]},$label_array->[$genome]);
 	      }
 	    #If the first snp value from the proposed solution contains a G or
 	    #3 for this genome
@@ -1082,8 +1721,6 @@ sub isSolution
 
 		#Push the current genome's SNP data and labels into the G well
 		push(@{$genome_wells->[3]},$genome);
-#		push(@{$genome_wells->[3]},$snp_data_buffer->[$genome]);
-#		push(@{$new_label_array->[3]},$label_array->[$genome]);
 	      }
 	    #If the first snp value from the proposed solution contains a C or
 	    #4 for this genome
@@ -1102,8 +1739,6 @@ sub isSolution
 
 		#Push the current genome's SNP data and labels into the C well
 		push(@{$genome_wells->[4]},$genome);
-#		push(@{$genome_wells->[4]},$snp_data_buffer->[$genome]);
-#		push(@{$new_label_array->[4]},$label_array->[$genome]);
 	      }
 	    #If the first snp value from the proposed solution contains a gap
 	    #(-) or 5 for this genome
@@ -1132,8 +1767,6 @@ sub isSolution
 		#Push the current genome's SNP data and labels into the dot (.)
 		#well
 		push(@{$genome_wells->[5]},$genome);
-#		push(@{$genome_wells->[5]},$snp_data_buffer->[$genome]);
-#		push(@{$new_label_array->[5]},$label_array->[$genome]);
 	      }
 	  }
 
@@ -1176,14 +1809,10 @@ sub isSolution
 	return(#Call the 6th well first so that if it doesn't resolve, I don't
 	       #waste memory
 
-#########Note that putting this call first changes the order of leaves in the solution array.  I need to update everything to reflect this.
-
-
 	       isSolution($proposed_solution,
 			  $snp_data_buffer,
 			  $genome_wells->[0],
 			  $label_array,
-#			  $new_label_array->[0],
 			  $solution_array,
 			  scalar(@{$genome_wells->[0]}) == 0) &&
 	       isSolution($proposed_solution,
@@ -1196,13 +1825,6 @@ sub isSolution
 			   [@{$genome_wells->[1]},@{$genome_wells->[0]}] :
 			   $genome_wells->[1]),
 			  $label_array,
-#			  #If there are genomes in the real well and in the
-#			  #pseudo-well, then add the labels from the pseudo
-#			  #well
-#			  (scalar(@{$genome_wells->[1]}) &&
-#			   scalar(@{$genome_wells->[0]}) ?
-#			   [@{$new_label_array->[1]},@{$new_label_array->[0]}]
-#			   : $new_label_array->[1]),
 			  $solution_array,
 			  scalar(@{$genome_wells->[1]}) == 0) &&
 	       isSolution($proposed_solution,
@@ -1215,13 +1837,6 @@ sub isSolution
 			   [@{$genome_wells->[2]},@{$genome_wells->[0]}] :
 			   $genome_wells->[2]),
 			  $label_array,
-#			  #If there are genomes in the real well and in the
-#			  #pseudo-well, then add the labels from the pseudo
-#			  #well
-#			  (scalar(@{$genome_wells->[2]}) &&
-#			   scalar(@{$genome_wells->[0]}) ?
-#			   [@{$new_label_array->[2]},@{$new_label_array->[0]}]
-#			   : $new_label_array->[2]),
 			  $solution_array,
 			  scalar(@{$genome_wells->[2]}) == 0) &&
 	       isSolution($proposed_solution,
@@ -1234,13 +1849,6 @@ sub isSolution
 			   [@{$genome_wells->[3]},@{$genome_wells->[0]}] :
 			   $genome_wells->[3]),
 			  $label_array,
-#			  #If there are genomes in the real well and in the
-#			  #pseudo-well, then add the labels from the pseudo
-#			  #well
-#			  (scalar(@{$genome_wells->[3]}) &&
-#			   scalar(@{$genome_wells->[0]}) ?
-#			   [@{$new_label_array->[3]},@{$new_label_array->[0]}]
-#			   : $new_label_array->[3]),
 			  $solution_array,
 			  scalar(@{$genome_wells->[3]}) == 0) &&
 	       isSolution($proposed_solution,
@@ -1253,13 +1861,6 @@ sub isSolution
 			   [@{$genome_wells->[4]},@{$genome_wells->[0]}] :
 			   $genome_wells->[4]),
 			  $label_array,
-#			  #If there are genomes in the real well and in the
-#			  #pseudo-well, then add the labels from the pseudo
-#			  #well
-#			  (scalar(@{$genome_wells->[4]}) &&
-#			   scalar(@{$genome_wells->[0]}) ?
-#			   [@{$new_label_array->[4]},@{$new_label_array->[0]}]
-#			   : $new_label_array->[4]),
 			  $solution_array,
 			  scalar(@{$genome_wells->[4]}) == 0) &&
 	       isSolution($proposed_solution,
@@ -1272,13 +1873,6 @@ sub isSolution
 			   [@{$genome_wells->[5]},@{$genome_wells->[0]}] :
 			   $genome_wells->[5]),
 			  $label_array,
-#			  #If there are genomes in the real well and in the
-#			  #pseudo-well, then add the labels from the pseudo
-#			  #well
-#			  (scalar(@{$genome_wells->[5]}) &&
-#			   scalar(@{$genome_wells->[0]}) ?
-#			   [@{$new_label_array->[5]},@{$new_label_array->[0]}]
-#			   : $new_label_array->[5]),
 			  $solution_array,
 			  scalar(@{$genome_wells->[5]}) == 0));
       }
@@ -1323,7 +1917,7 @@ sub GetNextCombo
     #has increased since the last combo
     if(scalar(@$combo) == 0 || scalar(@$combo) != $set_size)
       {
-	verbose("Initializing combo.") if ($DEBUG > 1);
+	verbose("DEBUG: Initializing combo.") if ($DEBUG > 1);
 	#Empty the combo
 	@$combo = ();
 	#Fill it with a sequence of numbers starting with 0
@@ -1337,12 +1931,12 @@ sub GetNextCombo
     my $upper_lim = $pool_size - 1;
     my $cur_index = $#{$combo};
 
-    verbose("Upper limit: $upper_lim.\nCurrent Index: $cur_index") if ($DEBUG > 1);
+    verbose("DEBUG: Upper limit: $upper_lim.\nCurrent Index: $cur_index") if ($DEBUG > 1);
     #Increment the last number of the combination if it is below the limit and
     #return true
     if($combo->[$cur_index] < $upper_lim)
       {
-	verbose("Incrementing value at index $cur_index because ($combo->[$cur_index] < $upper_lim).") if ($DEBUG > 1);
+	verbose("DEBUG: Incrementing value at index $cur_index because ($combo->[$cur_index] < $upper_lim).") if ($DEBUG > 1);
         $combo->[$cur_index]++;
         return(1);
       }
@@ -1354,11 +1948,11 @@ sub GetNextCombo
 	#Decrement the limit and the current number index
         $upper_lim--;
         $cur_index--;
-	verbose("Upper limit: $upper_lim.\nCurrent Index: $cur_index")
+	verbose("DEBUG: Upper limit: $upper_lim.\nCurrent Index: $cur_index")
 	  if ($DEBUG > 1);
       }
 
-    verbose("Incrementing value at index $cur_index.") if ($DEBUG > 1);
+    verbose("DEBUG: Incrementing value at index $cur_index.") if ($DEBUG > 1);
 
     #Increment the last number out of the above loop
     $combo->[$cur_index]++;
@@ -1366,7 +1960,7 @@ sub GetNextCombo
     #For every number in the combination after the one above
     foreach(($cur_index+1)..$#{$combo})
       {
-	verbose("Setting subsequent values.") if ($DEBUG > 1);
+	verbose("DEBUG: Setting subsequent values.") if ($DEBUG > 1);
 	#Set its value equal to the one before it plus one
 	$combo->[$_] = $combo->[$_-1]+1;
       }
@@ -1374,7 +1968,7 @@ sub GetNextCombo
     #If we've exceded the pool size on the last number of the combination
     if($combo->[-1] > $pool_size)
       {
-	verbose("Ending because we finished the pool size: ($combo->[-1] > $pool_size).") if ($DEBUG > 1);
+	verbose("DEBUG: Ending because we finished the pool size: ($combo->[-1] > $pool_size).") if ($DEBUG > 1);
 	#Return false
 	return(0);
       }
@@ -1471,19 +2065,7 @@ sub GetNextIndepCombo
 #`SNPSTI.pl -h` for a description and example of the input file format.
 sub LoadSNPs
   {
-
-
-
-
-
-####################I need to identify columns with evolutionary states 12345 so that I don't use frame sort on them.  I also need to make sure the states 12345 aren't mixed with other states (except ambiguous ones are OK)
-
-
-
-
-
-
-
+    #I need to identify columns with evolutionary states 12345 so that I don't use frame sort on them.  I also need to make sure the states 12345 aren't mixed with other states (except ambiguous ones are OK)
 
     #Use a strict environment
     use strict;
@@ -1506,9 +2088,7 @@ sub LoadSNPs
     #Initialize and declare variables
     my $line = 0;
     my $snp_names_done = 0;
-    my($last_size,$tmp,$curline,$score_hash,
-#       @tmp_data
-      );
+    my($last_size,$tmp,$curline,$score_hash);
 
     #For each line of the SNP data file
     while($curline = <FILE>)
@@ -1571,45 +2151,33 @@ sub LoadSNPs
 
 	$tmp =~ s/\s+//g;
 
-	#Split up the data on the line
-#	undef(@tmp_data);
-#	@tmp_data = split(/\s+/,$tmp);
-
 	#Score the genomes based on number of ambiguous characters
 	my $tmp_score = 0;
 	$tmp_score++ while($tmp =~ /[nx\?\.]/g);
 	push(@{$score_hash->{$tmp_score}},$line);
-#	push(@{$score_hash->{scalar(grep {/^[nx\?\.]$/i} @tmp_data)}},$line);
 
 	#If we're going to buffer the data, store the first few SNP columns
 	if($low_memory_mode)
 	  {
 	    $tmp =~ s/\s//g;
 	    ${$snp_data_buffer->[$line]} = $tmp;
-#	    foreach my $index (0..(scalar(@tmp_data) - 1))
-#	      {${$snp_data_buffer->[$line]} .= $tmp_data[$index]}
 	  }
 	else
-#	  {$snp_data_buffer->[$line] = [@tmp_data]}
 	  {$snp_data_buffer->[$line] = [split('',$tmp)]}
 
 	#Error check the number of columns
-#        if($last_size != scalar(@tmp_data) && defined($last_size))
         if($last_size != length($tmp) && defined($last_size))
 	  {
             error("Genome: [$genome_names->[$line]] on line $line has a different number of SNPs: [",
-#			  scalar(@tmp_data),
 		  length($tmp),
 		  "] than previous lines: [$last_size]!");
 	    return(3);
 	  }
 	elsif($snp_names_done != 2 &&
-#	      scalar(@$snp_names) != scalar(@tmp_data))
 	      scalar(@$snp_names) != length($tmp))
 	  {
 	    error("Genome [$genome_names->[$line]] on line [$line] doesn't have the same number of ",
 		  "columns: [",
-#			  scalar(@tmp_data),
 		  length($tmp),
 		  "] as the column names (SNP (names and) positions): [",
 		  scalar(@$snp_names),
@@ -1624,7 +2192,6 @@ sub LoadSNPs
 	  }
 
 	#Store the last number of columns
-#        $last_size = scalar(@tmp_data);
         $last_size = length($tmp);
 
 	#Increment the line number
@@ -1897,6 +2464,19 @@ CLUSTER USAGE: See the "HOW TO PARALLELIZE SNPSTI" section of the --help output.
                     first and then do a second run using the command line to
                     list the nodes desired to be analyzed to solve the
                     remaining nodes exhaustively.
+     -w   OPTIONAL  [original] (original,worst-case) The scoring function to
+                    use in the greedy search of the data (see -g).  Scoring
+                    functions determine how good a SNP combination is at
+                    separating genomes under a subtree from the rest of the
+                    tree.  The "original" scoring function uses a penalty based
+                    on non-target genomes with no data for a particular SNP:
+                    (SUM_over_all_states_s[(number_of_labelled_genomes_s^2 /
+                    (number_of_genomes_s +
+                    number_of_unlabelled_genomes_with_no_state)) /
+                    number_of_labelled_genomes]).  The worst-case scenario
+                    scoring function is similar, except it selects the worst
+                    possible value that SNPs with no data for a genome could be
+                    when there's no data for it.
      -o   OPTIONAL  [Off] Skip the exhaustive search.  This option only works
                     if -g is supplied.  Note, you should use this option along
                     with --partial-suffix in order to save your greedy reult
@@ -1945,11 +2525,9 @@ sub help
     #Print a description of this program
     print STDERR ("SNP Sub-Tree Isolator (SNPSTI.pl)\n",
 		  "Robert W. Leach\n",
-		  "Bioscience Division\n",
-		  "MS M888\n",
-		  "Los Alamos National Laboratory\n",
-		  "Los Alamos, NM 87545\n",
-		  "robleach\@lanl.gov\n\n");
+		  "Center for Computational Research\n",
+		  "Buffalo, NY 14203\n",
+		  "rwleach\@ccr.buffalo.edu\n\n");
     print STDERR ("* WHAT IS THIS: This program takes a phylogenetic tree ",
 		  "and SNP data and assigns SNP values to the branches of ",
 		  "the phylogenetic tree.  These values uniquely identify ",
@@ -2166,37 +2744,18 @@ sub help
                              SNPSTI_CLUSTER_TREE_PATH environment variable (and
                              the absence of any command line arguments) tells
                              SNPSTI to add the tree.pm module in the location
-                             given in the environment variable.  note that if
+                             given in the environment variable.  Note that if
                              tree.pm exists anywhere else in the @INC array, it
                              will occlude the instance your environment
-                             variable adds.  A special script specific to the
-                             rlx cluster at Los Alamos called
-                             "qsub_command_wrapper.pl" will take a file of
-                             commands, duplicate your environment, and execute
-                             each command on a different node.  All you have to
-                             do is generate the command file.  However, here is
-                             an example of how to run one command for
-                             phylogenetic tree node "test_node" on an
-                             individual cluster node of the rlx cluster at Los
-                             Alamos:
-
-                               >qsub -v SNPSTI_CLUSTER_PARAMS="test_node -s input.snps -t input.tree -v",SNPSTI_CLUSTER_TREE_PATH="/cluster/path/to/tree/module/" /path/to/SNPSTI.pl -e redirected_output_file.txt.err -o redirected_output_file.txt
-
-                             You simply need to repeat this command for every
-                             node in the tree to run multiple parallel
-                             processes.  This is what qsub_command_wrapper.pl
-                             does given a file of commands like this:
+                             variable adds.  You can run instances of this
+                             script in parallel, each solving a different node
+                             of the tree.  Example:
 
                                /path/to/SNPSTI.pl test_node1 -s input.snps -t input.tree -v > test_node1_output.txt
                                /path/to/SNPSTI.pl test_node2 -s input.snps -t input.tree -v > test_node2_output.txt
                                /path/to/SNPSTI.pl test_node3 -s input.snps -t input.tree -v > test_node3_output.txt
                                /path/to/SNPSTI.pl test_node4 -s input.snps -t input.tree -v > test_node4_output.txt
                                ...
-
-                             It parses the commands to run qsub and also
-                             duplicates your environment using qsub\'s -v
-                             option, so be sure to set up your environment
-                             (hint: put it in your shell\'s login script).
 
                              NOTE: If you have very large input files, you
                              should run multiple tree nodes per process because
@@ -2239,19 +2798,10 @@ sub printSortedResults
 
 	my $framesum = 0;
 
-
-
-
-
-
-
-###########If I disallow numbers as headers of columns containing generic evolutionary events, I won't need to do anything here.  Otherwise, I must make sure I don't use their numbers in the frame calculation here.
-
-
-
-
-
-
+	##If I disallow numbers as headers of columns containing generic
+	##evolutionary events, I won't need to do anything here.  Otherwise, I
+	##must make sure I don't use their numbers in the frame calculation
+	##here.
 
 	if($framesort)
 	  {map {$framesum += 3 - ($1 % 3)} ($snp_area =~ /(\d+)/g)}
@@ -2605,11 +3155,11 @@ sub getNextGreedySNP
     my $verbose               = $_[6];
     my $greedy_sol_num        = $_[7];
     my $relevant_genomes      = $_[8];
+    my $scoring_function      = $_[9];
 
-#print STDERR "TEST GREEDY SNP POOL: [@$greedy_snp_pool]\n";
-    my($score,$maxscore,$maxsnp,$line,
-#       @tmp_pool
-      );
+    #print STDERR "TEST GREEDY SNP POOL: [@$greedy_snp_pool]\n";
+
+    my($score,$maxscore,$maxsnp,$line);
     my $linesize = 0;
     my $greedy_pool_index = 0;
     my $max_index = 0;
@@ -2618,7 +3168,8 @@ sub getNextGreedySNP
 				   . (scalar(@$greedy_snp_candidates) + 1));
     foreach my $snp (@$greedy_snp_pool)
       {
-#print STDERR "TEST GREEDILY EVALUATING SNP: $snp WITH CANDIDATES: @$greedy_snp_candidates\n";
+	#print STDERR "TEST GREEDILY EVALUATING SNP: $snp WITH CANDIDATES: @$greedy_snp_candidates\n";
+
 	$score = getRatioResolved((scalar(@$greedy_snp_candidates) ?
 				   [map {$optimized_snps->[$_]->[0]}
 				    (@$greedy_snp_candidates,$snp)] :
@@ -2626,15 +3177,15 @@ sub getNextGreedySNP
 				  $snp_data_buffer,
 				  $label_array,
 				  $relevant_genomes,
-				  1);
-#print STDERR "TEST: SCORE FOR SNP $snp_names->[$snp]: $score\n";
+				  $scoring_function,
+				  #1
+				 );
+
+	#print STDERR "TEST: SCORE FOR SNP $snp_names->[$snp]: $score\n";
+
 	if(!defined($maxscore) || $score > $maxscore ||
 	   ($equal_chance && $score == $maxscore && rand() < $equal_chance))
 	  {
-#	    #bin the formerly maximum SNPs in a temporary pool
-#	    if(defined($maxsnp))
-#	      {push(@tmp_pool,$maxsnp)}
-
 	    $max_index = $greedy_pool_index;
 
 	    $maxscore = $score;
@@ -2645,10 +3196,6 @@ sub getNextGreedySNP
                 "] SNP [$snp_names->[$optimized_snps->[$snp]->[0]]] SCORE = $score.  " .
                   "MAX [$snp_names->[$optimized_snps->[$maxsnp]->[0]]] = $maxscore.\n"
 	  }
-#	else
-#	  #Keep the evaluated SNPs in a temporary pool so that we don't have to
-#	  #do a grep to remove the chosen SNP
-#	  {push(@tmp_pool,$snp)}
 
 	verbose(1,
 		"GREEDY ITERATION: [$greedy_sol_num]  SIZE: [",
@@ -2664,12 +3211,7 @@ sub getNextGreedySNP
 	#I'm doing a pattern match here just in case the real number wouldn't
 	#work using == against an integer
 	if($score == 1)
-	  {
-#	    #Take care of the max snp extraction from the pool because the
-#	    #temporary pool doesn't have all the SNPs in it.
-#	    @$greedy_snp_pool = grep {$_ ne $maxsnp} @$greedy_snp_pool;
-	    last;
-	  }
+	  {last}
       }
 
     #This call is purely just to get the $prtl_soln_tree filled in
@@ -2680,7 +3222,8 @@ sub getNextGreedySNP
 		     $snp_data_buffer,
 		     $label_array,
 		     $relevant_genomes,
-		     1,
+		     $scoring_function,
+		     #1,
 		     $prtl_soln_tree);
 
     if($partial_suffix ne '')
@@ -2691,10 +3234,6 @@ sub getNextGreedySNP
 	select($handle);
       }
 
-#    #Only use the temporary pool if it has all the SNPs in it (i.e. didn't sto
-#    # short in the loop above with the call to last)
-#    @$greedy_snp_pool = @tmp_pool unless($score == 1);
-
     splice(@$greedy_snp_pool,$max_index,1);
 
     push(@$greedy_snp_candidates,$maxsnp);
@@ -2704,38 +3243,56 @@ sub getNextGreedySNP
 
 
 #This sub scores proposed solutions based on the ratio of labelled versus
-#unlabelled genomes in each well.
+#unlabelled genomes in each well.  It returns a "resolved" score between 0 and
+#1 (inclusive) for the labelled genomes indicating roughly the ratio of target
+#leaves that are separated from non target leaves.  If ambiguous nucleotides
+#exist in the data, these numbers may grow because genomes will be thrown into
+#multiple branches of the solution tree corresponding to the nucleotides the
+#ambiguous nucleotide stands for.
 sub getRatioResolved
   {
     use strict;
+
+    my($snp,$proposed_solution);
     #Break off the first snp in the array and store the rest in the
     #proposed_solution which will be sent in a recursive call
-    my($snp,$proposed_solution);
     ($snp,@$proposed_solution) = @{$_[0]};
-    my $snp_data_buffer        = $_[1];  #Array of SNP strings
+
+    my $snp_data_buffer        = $_[1];  #Array of SNP strings for each genome
     my $label_array            = $_[2];  #Array of genome labels indexed by
                                          #genome
     my $relevant_genomes       = $_[3];  #Array of genome indexes to consider
-    my $overall_score_flag     = $_[4];  #Return the score of the partial solution instead of the improvement score.  I added this to solve issues with negative scores being returned
-    my $prtl_soln_tree         = $_[5];
-    my $counted_scores         = $_[6];  #genomes whose score "counts" will be
+    my $scoring_function       = (defined($_[4]) ? $_[4] : 'original');
+    my $prtl_soln_tree         = $_[5];  #A tree.pm object to be filled with
+                                         #a partial solution. Initially empty.
+    my $counted_scores         = $_[6];  #INTERNAL USE ONLY.  DO NOT SUPPLY.
+                                         #Genomes whose scores "count" will be
                                          #labelled in this array.  A genome
-                                         #"counts", if it's been placed in a
+                                         #"counts" if it's been placed in a
                                          #real well because a SNP value put it
-                                         #there (other than a dot).  This allows us to skip genomes which provide no information for the particular set of SNPs supplied UNTIL a real value is encountered.  It is assumed/guaranteed elsewhere that all genomes will have a value for at least one of the SNPs provided (if not, 0 is returned).  INTERNAL
-                                         #USE ONLY.  DO NOT SUPPLY.
-    my $not_first_call         = $_[7];  #INTERNAL USE ONLY.  DO NOT SUPPLY.
+                                         #there (other than a dot). This allows
+                                         #us to skip genomes which provide no
+                                         #information for the particular set of
+                                         #SNPs supplied UNTIL a real value is
+                                         #encountered. It is assumed/guaranteed
+                                         #elsewhere that all genomes will have
+                                         #a value for at least one of the SNPs
+                                         #provided (if not, 0 is returned).
+                                         #INTERNAL USE ONLY.  DO NOT SUPPLY.
+    my $num_possible_states    = $_[7];  #INTERNAL USE ONLY.  DO NOT SUPPLY.
+    my $first_call    = (defined($_[8]) ? 0 : 1);  #INTERNAL USE ONLY.
+                                                   #DO NOT SUPPLY.
+
+    print STDERR ("DEBUG: Call to getRatioResolved.\n") if($first_call && $DEBUG);
 
     my $do_soln_tree = (defined($prtl_soln_tree) &&
 			ref($prtl_soln_tree) eq 'tree' ? 1 : 0);
     my $going_to_recurse = scalar(@$proposed_solution);
 
-#print STDERR "TEST: PARAMS SENT IN: SNPS: [$snp,",join(',',@$proposed_solution),"] SIZE OF SNP DATA BUFFER: ",scalar(@$snp_data_buffer)," LABELS: [@$label_array]\n";
-
-    #If this is a recursive call and the well was empty, return 1
-    if($not_first_call &&
-       scalar(@$label_array) == 0)
+    #If this is a recursive call and the well was empty, return 0
+    if(!$first_call && scalar(@$label_array) == 0)
       {
+	#If we're building a partial solution tree
 	if($do_soln_tree)
 	  {
 	    #We'll add the unlabeled genomes directly under this branch because
@@ -2746,131 +3303,122 @@ sub getRatioResolved
 	      {$prtl_soln_tree->addChild(tree->new($genom))}
 	  }
 
-	return(wantarray ? (0,0) : 0);
+	return(0);
       }
 
+    #Initialize counted_scores to 0 if not set (should happen on 1st call only)
     if(!defined($counted_scores))
       {$counted_scores = [map {0} @$label_array]}
 
+    #Initialize num_possible_states to 1 if not set (should happen on 1st call
+    #only)
+    if(!defined($num_possible_states))
+      {$num_possible_states = [map {1} @$label_array]}
+
     #Initialize variables local to this recursive call
-    my $real_label_counts = [0,0,0,0,0,0];      #Number of genomes in each well that didn't originate from a pseudo-well
-    my $label_counts     = [0,0,0,0,0,0];       #Number of labelled organisms
-                                                #in each well
-    my $total_counts     = [0,0,0,0,0,0];       #Number of total organisms in
-                                                #each well
+    my $real_label_counts       = [0,0,0,0,0,0];       #Number of genomes in
+                                                       #each well that didn't
+                                                       #originate from a
+                                                       #pseudo-well
+    my $label_counts            = [0,0,0,0,0,0];       #Number of labelled
+                                                       #organisms in each well
+    my $total_counts            = [0,0,0,0,0,0];       #Number of total
+                                                       #organisms in each well
+    my $new_label_array         = [[],[],[],[],[],[]]; #Labels are split the 
+                                                       #same way as genomes in
+                                                       #the genome wells for
+                                                       #the next recursive call
+    my $new_relevant_genomes    = [[],[],[],[],[],[]]; #Same as above
+    my $new_counted_scores      = [[],[],[],[],[],[]];
+    my $new_num_possible_states = [[],[],[],[],[],[]]; #Number of possible
+                                                       #values a specific SNP
+                                                       #combination can have
+                                                       #for a single genome.
+                                                       #This is intended to
+                                                       #estimate the
+                                                       #possibilities for SNPs
+                                                       #whose values are
+                                                       #ambiguous (e.g. . = 5,
+                                                       #N = 4, S = 2, etc.)
+    my $weighted_label_counts   = [0,0,0,0,0,0];       #Number of labelled
+                                                       #organisms in each well
+                                                       #weighted by the number
+                                                       #of states
+    my $weighted_total_counts   = [0,0,0,0,0,0];       #Number of total
+                                                       #organisms in each well
+                                                       #weighted by the number
+                                                       #of states
 
-#I'm taking out the genome wells because I've abstracted it away.  I now use
-#real genome indexes to access the buffer and pass those indexes along in the
-#relevant genomes arrays.  The reason for this was to filter the genomes based
-#on whether or not they had any real SNP values for the SNPs that remained
-#(because SNPs were filtered too based on whether there were any real values
-#for any of the labelled genomes)
-#    my $genome_wells     = [[],[],[],[],[],[]]; #Contains genome SNP data split
-#                                                #by the current SNP values
+    #Note, the calculations for the number of possible states are based on
+    #possible SNP values.  If other information is encoded in the data, it will
+    #be assumed that there are 5 possible values when a dot is encountered,
+    #thus a dot should not be used for missing data.
 
-    my $new_label_array  = [[],[],[],[],[],[]]; #labels are split the same way
-                                                #as genomes in the genome wells
-                                                #for the next recursive call
-    my $new_relevant_genomes = [[],[],[],[],[],[]]; #same as above
-    my $new_counted_scores = [[],[],[],[],[],[]];
+    ##
+    ## The first steps in the process are to determine:
+    ##   1. the value of the SNP,
+    ##   2. which well(s) the genome and associated data goes into, and
+    ##   3. whether the genome should be treated as real data or "no data"
+    ##
 
     my($matched);
-    #For each genome
-#    foreach my $genome (0..(scalar(@$snp_data_buffer) - 1))
     my $relevant_genome_index = -1;
+
+    #For each genome
     foreach my $real_genome_index (@$relevant_genomes)
       {
 	$relevant_genome_index++;
+
+	#Get the current SNP's value for this genome
 	my $snp_val = getSNP($snp_data_buffer,$real_genome_index,$snp);
+
+	$num_possible_states->[$relevant_genome_index] *=
+	  getNumStates($snp_val);
 
 	$matched = 0;
 
-	##I want to get a partial score on SNPs when some of the genomes have a set of totally ambiguous SNPs, so I need to comment out the code below.  Every node is going to have some totally ambiguous genomes for the set of SNPs, but I want to get a score regardless so I can pick those SNPs that still cover a bunch of genomes so that other SNPs later can be added that those genomes have SNP values for
-
-########But what about when all genomes have no info in any of these SNPs?  how do I skip those?
-
-#	#If this is the first call and this is a labelled genome
-#	if(!$not_first_call && $label_array->[$genome])
-#	  {
-#	    my $give_up = 1;
-#
-#	    #Look ahead for this genome to see if its SNPs are all totally
-#	    #ambiguous
-#	    my $snp_val = getSNP($snp_data_buffer,$genome,$snp);
-#	    if($snp_val !~ /^\.$/i)
-#	      {$give_up = 0}
-#	    elsif(scalar(@$proposed_solution))
-#	      {
-#		#Foreach future SNP value for the current genome
-#		foreach my $snp_val (map {getSNP($snp_data_buffer,$genome,$_)}
-#				     @$proposed_solution)
-#		  {
-#		    #If the SNP value is not entirely ambiguous
-#		    if($snp_val !~ /^\.$/i)
-#		      {
-#			#Decide not to give up and move on
-#			$give_up = 0;
-#			last;
-#		      }
-#		  }
-#	      }
-#
-#	    #Return 0 resolved
-#	    return(0) if($give_up);
-#	  }
+	#I want to get a partial score on SNPs when some of the genomes have a
+	#set of totally ambiguous SNPs, so I need to comment out the code
+	#below.  Every node is going to have some totally ambiguous genomes for
+	#the set of SNPs, but I want to get a score regardless so I can pick
+	#those SNPs that still cover a bunch of genomes so that other SNPs
+	#later can be added that those genomes have SNP values for
 
 	if($snp_val eq '.')
 	  {
 	    $matched = 1;
 
+	    #If this genome is labelled
 	    if($label_array->[$relevant_genome_index])
 	      {
 		$label_counts->[0]++;
+
+		$weighted_label_counts->[0] +=
+		  1 / $num_possible_states->[$relevant_genome_index];
+
+		#If this genome was placed here by a real valued SNP (not a .)
 		if($counted_scores->[$relevant_genome_index])
 		  {$real_label_counts->[0]++}
-
-###Whoops.  Took out the code below because I just realized that the resultant calculations for internal nodes becomes skewed when nothing real went into any of these wells.  It may have been taken care of by the calculation of 0 that these numbers would have been multiplied by since the recursive call is based on the population of the arrays sent in the recursive calls, but I think it would be better to add $label_counts->[0] when needed instead of relying on that.
-#		#Don't let non-existant SNPs affect the results in other branches when we're doing the leaves.  We can either assume that any labelled genomes in this well have been previously separated by SNPs WITH values OR consider unlabelled genomes separated down other real branches as the contribution of this SNP.  The relative improvement of the score in this well actually indicates the potential it has to improve solutions with other SNPs by the amount it can rule out down those other branches.  So if there's only one SNP in the solution and all the labelled genomes end up in this well, it will get a high score because while it can't positively identify the labelled genomes, it can positively identify all the unlabelled genomes
-#		if(scalar(@$proposed_solution))
-#		  {
-#		    $label_counts->[1]++;
-#		    $label_counts->[2]++;
-#		    $label_counts->[3]++;
-#		    $label_counts->[4]++;
-#		    $label_counts->[5]++;
-#		  }
 	      }
 
 	    $total_counts->[0]++;
 
-###Whoops.  Took out the code below because I just realized that the resultant calculations for internal nodes becomes skewed when nothing real went into any of these wells.  It may have been taken care of by the calculation of 0 that these numbers would have been multiplied by since the recursive call is based on the population of the arrays sent in the recursive calls, but I think it would be better to add $label_counts->[0] when needed instead of relying on that.
-#		#Don't let non-existant SNPs affect the results in other branches when we're doing the leaves.  We can either assume that any labelled genomes in this well have been previously separated by SNPs WITH values OR consider unlabelled genomes separated down other real branches as the contribution of this SNP.  The relative improvement of the score in this well actually indicates the potential it has to improve solutions with other SNPs by the amount it can rule out down those other branches.  So if there's only one SNP in the solution and all the labelled genomes end up in this well, it will get a high score because while it can't positively identify the labelled genomes, it can positively identify all the unlabelled genomes
-#		if(scalar(@$proposed_solution))
-#		  {
-#		    $unlabel_counts->[1]++;
-#		    $unlabel_counts->[2]++;
-#		    $unlabel_counts->[3]++;
-#		    $unlabel_counts->[4]++;
-#		    $unlabel_counts->[5]++;
-#		  }
+	    $weighted_total_counts->[0] +=
+	      1 / $num_possible_states->[$relevant_genome_index];
 
-#	    if($going_to_recurse)
-#	      {
-		#Push the current genome's SNP data and labels into the dot
-		#well
-#		push(@{$genome_wells->[0]},
-#		     $snp_data_buffer->[$real_genome_index]);
-		push(@{$new_label_array->[0]},
-		     $label_array->[$relevant_genome_index]);
-		push(@{$new_relevant_genomes->[0]},
-		     $relevant_genomes->[$relevant_genome_index]);
-		push(@{$new_counted_scores->[0]},
-		     $counted_scores->[$relevant_genome_index]);
-#	      }
+	    #Push the current genome's SNP data and labels into the dot well
+	    push(@{$new_label_array->[0]},
+		 $label_array->[$relevant_genome_index]);
+	    push(@{$new_relevant_genomes->[0]},
+		 $relevant_genomes->[$relevant_genome_index]);
+	    push(@{$new_counted_scores->[0]},
+		 $counted_scores->[$relevant_genome_index]);
+	    push(@{$new_num_possible_states->[0]},
+		 $num_possible_states->[$relevant_genome_index]);
 	  }
 	else
 	  {
-	    $counted_scores->[$relevant_genome_index] = 1 if(!$not_first_call);
+	    $counted_scores->[$relevant_genome_index] = 1 if($first_call);
 
 	    #If the first snp value from the proposed solution contains an A or
 	    #1 for this genome
@@ -2881,23 +3429,28 @@ sub getRatioResolved
 		if($label_array->[$relevant_genome_index])
 		  {
 		    $label_counts->[1]++;
+
+		    $weighted_label_counts->[1] +=
+		      1 / $num_possible_states->[$relevant_genome_index];
+
+		    #If this genome was placed here by a real SNP value (not .)
 		    if($counted_scores->[$relevant_genome_index])
 		      {$real_label_counts->[1]++}
 		  }
+
 		$total_counts->[1]++;
 
-#		if($going_to_recurse)
-#		  {
-		    #Push the current genome's SNP data and labels into the A
-		    #well
-#		    push(@{$genome_wells->[1]},
-#			 $snp_data_buffer->[$real_genome_index]);
-		    push(@{$new_label_array->[1]},
-			 $label_array->[$relevant_genome_index]);
-		    push(@{$new_relevant_genomes->[1]},
-			 $relevant_genomes->[$relevant_genome_index]);
-		    push(@{$new_counted_scores->[1]},1);
-#		  }
+		$weighted_total_counts->[1] +=
+		  1 / $num_possible_states->[$relevant_genome_index];
+
+		#Push the current genome's SNP data and labels into the A well
+		push(@{$new_label_array->[1]},
+		     $label_array->[$relevant_genome_index]);
+		push(@{$new_relevant_genomes->[1]},
+		     $relevant_genomes->[$relevant_genome_index]);
+		push(@{$new_counted_scores->[1]},1);
+		push(@{$new_num_possible_states->[1]},
+		     $num_possible_states->[$relevant_genome_index]);
 	      }
 
 	    #If the first snp value from the proposed solution contains a T or
@@ -2909,23 +3462,28 @@ sub getRatioResolved
 		if($label_array->[$relevant_genome_index])
 		  {
 		    $label_counts->[2]++;
+
+		    $weighted_label_counts->[2] +=
+		      1 / $num_possible_states->[$relevant_genome_index];
+
+		    #If this genome was placed here by a real SNP value (not .)
 		    if($counted_scores->[$relevant_genome_index])
 		      {$real_label_counts->[2]++}
 		  }
+
 		$total_counts->[2]++;
 
-#		if($going_to_recurse)
-#		  {
-		    #Push the current genome's SNP data and labels into the T
-		    #well
-#		    push(@{$genome_wells->[2]},
-#			 $snp_data_buffer->[$real_genome_index]);
-		    push(@{$new_label_array->[2]},
-			 $label_array->[$relevant_genome_index]);
-		    push(@{$new_relevant_genomes->[2]},
-			 $relevant_genomes->[$relevant_genome_index]);
-		    push(@{$new_counted_scores->[2]},1);
-#		  }
+		$weighted_total_counts->[2] +=
+		  1 / $num_possible_states->[$relevant_genome_index];
+
+		#Push the current genome's SNP data and labels into the T well
+		push(@{$new_label_array->[2]},
+		     $label_array->[$relevant_genome_index]);
+		push(@{$new_relevant_genomes->[2]},
+		     $relevant_genomes->[$relevant_genome_index]);
+		push(@{$new_counted_scores->[2]},1);
+		push(@{$new_num_possible_states->[2]},
+		     $num_possible_states->[$relevant_genome_index]);
 	      }
 
 	    #If the first snp value from the proposed solution contains a G or
@@ -2937,24 +3495,29 @@ sub getRatioResolved
 		if($label_array->[$relevant_genome_index])
 		  {
 		    $label_counts->[3]++;
+
+		    $weighted_label_counts->[3] +=
+		      1 / $num_possible_states->[$relevant_genome_index];
+
+		    #If this genome was placed here by a real SNP value (not .)
 		    if($counted_scores->[$relevant_genome_index])
 		      {$real_label_counts->[3]++}
 		  }
+
 		$total_counts->[3]++;
 
-#		if($going_to_recurse)
-#		  {
-		    #Push the current genome's SNP data and labels into the G
-		    #well
-#		    push(@{$genome_wells->[3]},
-#			 $snp_data_buffer->[$real_genome_index]);
-		    push(@{$new_label_array->[3]},
-			 $label_array->[$relevant_genome_index]);
-		    push(@{$new_relevant_genomes->[3]},
-			 $relevant_genomes->[$relevant_genome_index]);
-		    push(@{$new_counted_scores->[3]},1);
-		  }
-#	      }
+		$weighted_total_counts->[3] +=
+		  1 / $num_possible_states->[$relevant_genome_index];
+
+		#Push the current genome's SNP data and labels into the G well
+		push(@{$new_label_array->[3]},
+		     $label_array->[$relevant_genome_index]);
+		push(@{$new_relevant_genomes->[3]},
+		     $relevant_genomes->[$relevant_genome_index]);
+		push(@{$new_counted_scores->[3]},1);
+		push(@{$new_num_possible_states->[3]},
+		     $num_possible_states->[$relevant_genome_index]);
+	      }
 
 	    #If the first snp value from the proposed solution contains a C or
 	    #4 for this genome
@@ -2965,23 +3528,28 @@ sub getRatioResolved
 		if($label_array->[$relevant_genome_index])
 		  {
 		    $label_counts->[4]++;
+
+		    $weighted_label_counts->[4] +=
+		      1 / $num_possible_states->[$relevant_genome_index];
+
+		    #If this genome was placed here by a real SNP value (not .)
 		    if($counted_scores->[$relevant_genome_index])
 		      {$real_label_counts->[4]++}
 		  }
+
 		$total_counts->[4]++;
 
-#		if($going_to_recurse)
-#		  {
-		    #Push the current genome's SNP data and labels into the C
-		    #well
-#		    push(@{$genome_wells->[4]},
-#			 $snp_data_buffer->[$real_genome_index]);
-		    push(@{$new_label_array->[4]},
-			 $label_array->[$relevant_genome_index]);
-		    push(@{$new_relevant_genomes->[4]},
-			 $relevant_genomes->[$relevant_genome_index]);
-		    push(@{$new_counted_scores->[4]},1);
-#		  }
+		$weighted_total_counts->[4] +=
+		  1 / $num_possible_states->[$relevant_genome_index];
+
+		#Push the current genome's SNP data and labels into the C well
+		push(@{$new_label_array->[4]},
+		     $label_array->[$relevant_genome_index]);
+		push(@{$new_relevant_genomes->[4]},
+		     $relevant_genomes->[$relevant_genome_index]);
+		push(@{$new_counted_scores->[4]},1);
+		push(@{$new_num_possible_states->[4]},
+		     $num_possible_states->[$relevant_genome_index]);
 	      }
 
 	    #If the first snp value from the proposed solution contains a gap
@@ -2993,23 +3561,29 @@ sub getRatioResolved
 		if($label_array->[$relevant_genome_index])
 		  {
 		    $label_counts->[5]++;
+
+		    $weighted_label_counts->[5] +=
+		      1 / $num_possible_states->[$relevant_genome_index];
+
+		    #If this genome was placed here by a real SNP value (not .)
 		    if($counted_scores->[$relevant_genome_index])
 		      {$real_label_counts->[5]++}
 		  }
+
 		$total_counts->[5]++;
 
-#		if($going_to_recurse)
-#		  {
-		    #Push the current genome's SNP data and labels into the gap
-		    #(-) well
-#		    push(@{$genome_wells->[5]},
-#			 $snp_data_buffer->[$real_genome_index]);
-		    push(@{$new_label_array->[5]},
-			 $label_array->[$relevant_genome_index]);
-		    push(@{$new_relevant_genomes->[5]},
-			 $relevant_genomes->[$relevant_genome_index]);
-		    push(@{$new_counted_scores->[5]},1);
-#		  }
+		$weighted_total_counts->[5] +=
+		  1 / $num_possible_states->[$relevant_genome_index];
+
+		#Push the current genome's SNP data and labels into the gap (-)
+		#well
+		push(@{$new_label_array->[5]},
+		     $label_array->[$relevant_genome_index]);
+		push(@{$new_relevant_genomes->[5]},
+		     $relevant_genomes->[$relevant_genome_index]);
+		push(@{$new_counted_scores->[5]},1);
+		push(@{$new_num_possible_states->[5]},
+		     $num_possible_states->[$relevant_genome_index]);
 	      }
 	  }
 
@@ -3022,8 +3596,14 @@ sub getRatioResolved
 	  }
       }
 
+    ##
+    ## Check to make sure the above code worked as expected if this is the
+    ## first call.  (We will assume the it works on every subsequent recursive
+    ## call.)
+    ##
+
     #If this is the first call and the wells are all empty
-    if(!$not_first_call && $going_to_recurse &&
+    if($first_call && $going_to_recurse &&
        (scalar(@{$new_label_array->[0]}) == 0 &&
 	scalar(@{$new_label_array->[1]}) == 0 &&
 	scalar(@{$new_label_array->[2]}) == 0 &&
@@ -3040,16 +3620,30 @@ sub getRatioResolved
 	exit(8);
       }
 
-    #Add nodes to the solution tree
     my($dot_node,$a_node,$t_node,$g_node,$c_node,$gap_node);
+    #If we're saving a solution tree
     if($do_soln_tree)
       {
-	$dot_node = tree->new($snp_names->[$snp] . ": no data ($label_counts->[0]/$total_counts->[0])");
-	$a_node   = tree->new($snp_names->[$snp] . ": A (real: $label_counts->[1]/$total_counts->[1], no data: $label_counts->[0]/$total_counts->[0])");
-	$t_node   = tree->new($snp_names->[$snp] . ": T (real: $label_counts->[2]/$total_counts->[2], no data: $label_counts->[0]/$total_counts->[0])");
-	$g_node   = tree->new($snp_names->[$snp] . ": G (real: $label_counts->[3]/$total_counts->[3], no data: $label_counts->[0]/$total_counts->[0])");
-	$c_node   = tree->new($snp_names->[$snp] . ": C (real: $label_counts->[4]/$total_counts->[4], no data: $label_counts->[0]/$total_counts->[0])");
-	$gap_node = tree->new($snp_names->[$snp] . ": gap (real: $label_counts->[5]/$total_counts->[5], no data: $label_counts->[0]/$total_counts->[0])");
+	#Create new nodes to be added to the solution tree
+	$dot_node = tree->new($snp_names->[$snp] . ": no data (" .
+			      "$label_counts->[0]/$total_counts->[0])");
+	$a_node   = tree->new($snp_names->[$snp] . ": A (real: " .
+			      "$label_counts->[1]/$total_counts->[1], no " .
+			      "data: $label_counts->[0]/$total_counts->[0])");
+	$t_node   = tree->new($snp_names->[$snp] . ": T (real: " .
+			      "$label_counts->[2]/$total_counts->[2], no " .
+			      "data: $label_counts->[0]/$total_counts->[0])");
+	$g_node   = tree->new($snp_names->[$snp] . ": G (real: " .
+			      "$label_counts->[3]/$total_counts->[3], no " .
+			      "data: $label_counts->[0]/$total_counts->[0])");
+	$c_node   = tree->new($snp_names->[$snp] . ": C (real: " .
+			      "$label_counts->[4]/$total_counts->[4], no " .
+			      "data: $label_counts->[0]/$total_counts->[0])");
+	$gap_node = tree->new($snp_names->[$snp] . ": gap (real: " .
+			      "$label_counts->[5]/$total_counts->[5], no " .
+			      "data: $label_counts->[0]/$total_counts->[0])");
+
+	#Add nodes to the solution tree
 	if($total_counts->[0])
 	  {$prtl_soln_tree->addChild($dot_node)}
 	if($total_counts->[1])
@@ -3064,6 +3658,11 @@ sub getRatioResolved
 	  {$prtl_soln_tree->addChild($gap_node)}
       }
 
+    ##
+    ## The next major step is to recurse to handle the rest of the SNPs in the
+    ## proposed solution, passing along what we've gathered for each well.
+    ##
+
     #If we're not at the end of the solution
     if(scalar(@$proposed_solution))
       {
@@ -3071,14 +3670,24 @@ sub getRatioResolved
 	## Get the relative scores from the children
 	##
 
+	my $children_score = 0;
+
 	#Get the scores from the recursive call
 	my($dot_score,$dot_labels,$a_score,$a_labels,$t_score,$t_labels,
 	   $g_score,$g_labels,$c_score,$c_labels,$gap_score,$gap_labels);
 
-        #If there were no labeled genomes in any of the other branches/wells (i.e. no other recursive calls will be made), go down this branch to separate the genomes further by the next SNP.  Otherwise, there's no need to traverse this branch in the computation, because the genomes here will travel with the other branches that have had genomes put in them.
+        #If there were no labeled genomes in any of the other branches/wells
+	#(i.e. no other recursive calls will be made), go down this branch to
+	#separate the genomes further by the next SNP.  Otherwise, there's no
+	#need to traverse this branch in the computation, because the genomes
+	#here will travel with the other branches that have had genomes put in
+	#them.
         if(scalar(grep {$_} @{$label_counts}[1..5]) == 0)
           {
             #$dot_labels = ($label_counts->[0] ? $label_counts->[0] : 1);
+
+	    #If there are labelled genomes and not all are real & labelled,
+	    #recurse with just this node
 	    if($label_counts->[0] &&
 	       $real_label_counts->[0] != $total_counts->[0])
 	      {#($dot_score,$dot_labels) = getRatioResolved($proposed_solution,
@@ -3086,11 +3695,13 @@ sub getRatioResolved
 					      $snp_data_buffer,
 					      $new_label_array->[0],
 					      $new_relevant_genomes->[0],
-					      $overall_score_flag,
+					      $scoring_function,
 					      $dot_node,
 					      $new_counted_scores->[0],
+					      $new_num_possible_states->[0],
 					      1);
 	      }
+	    #Else if there are labelled genomes and all are real and labelled
 	    elsif($label_counts->[0] &&
 	          $total_counts->[0] == $real_label_counts->[0])
 	      {
@@ -3106,13 +3717,9 @@ sub getRatioResolved
 			{$dot_node->addChild(tree->new($genom))}
 		  }
 
-                #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-                if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
-                  {$dot_score = 0}
-                else
-                  #{$dot_score = $label_counts->[0]}
-                  {$dot_score = 1}
+                $dot_score = 1;
               }
+	    #Else - the score is 0
 	    else
 	      {
 		if($do_soln_tree)
@@ -3130,6 +3737,7 @@ sub getRatioResolved
 		$dot_score = 0;
 	      }
           }
+	#Else - there will be no recursion with this well and the score is 0
         else
           {
 	    if($do_soln_tree)
@@ -3146,667 +3754,180 @@ sub getRatioResolved
 	    $dot_score = 0;
 	  }
 
-	#If there are any label or unlabel counts AND
-	#(there exists both real or unreal label counts AND
-	#real or unreal unlabel counts)
-	#In other words, only determine if both label and unlabel counts
-	#(including those added from the pseudo-well) are above zero if there
-	#are real-well genomes that have been added
-	#(Then the score must be further discerned recursively)
-
-        #$a_labels = ($label_counts->[1] ? $label_counts->[1] : 1);
-	#If (there are labelled genomes (real or unreal) OR
-	if(1)#($label_counts->[1] ||
-	#    #There are any real genomes (labelled OR unlabelled) AND
-	#    #labelled unreal genomes) AND
-	#    ($total_counts->[1] && $label_counts->[0])) &&
-	#   #The number of real + unreal labelled genomes is not equal to...
-	#   ($real_label_counts->[1] + $real_label_counts->[0]) !=
-	#   #the total real + unreal genomes
-	#   ($total_counts->[1] + $total_counts->[0]))
-	  {#($a_score,$a_labels) = getRatioResolved($proposed_solution,
-           $a_score = getRatioResolved($proposed_solution,
-				       $snp_data_buffer,
-				       (scalar(@{$new_label_array->[1]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_label_array->[1]},
-					 @{$new_label_array->[0]}] :
-					$new_label_array->[1]),
-				       (scalar(@{$new_label_array->[1]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_relevant_genomes->[1]},
-					 @{$new_relevant_genomes->[0]}] :
-					$new_relevant_genomes->[1]),
-                                       $overall_score_flag,
-				       $a_node,
-				       (scalar(@{$new_label_array->[1]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_counted_scores->[1]},
-					 @{$new_counted_scores->[0]}] :
-					$new_counted_scores->[1]),
-				       1)}
-	#Else if (there are labelled genomes (real or unreal) OR
-	elsif(($label_counts->[1] ||
-	       #There are any real genomes (labelled OR unlabelled) AND
-	       #labelled unreal genomes) AND
-	       ($total_counts->[1] && $label_counts->[0])) &&
-	      #The number of real + unreal labelled genomes is equal to...
-	      ($real_label_counts->[1] + $real_label_counts->[0]) ==
-	      #the total real + unreal genomes
-	      ($total_counts->[1] + $total_counts->[0]))
-	  {
-	    if($do_soln_tree)
-	      {
-		#Add genomes to the solution tree for partial solution output
-		foreach my $genom
-		  (map {($new_label_array->[1]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[1]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[1]}))
-		  {$a_node->addChild(tree->new($genom))}
-		foreach my $genom
-		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[0]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[0]}))
-		    {$a_node->addChild(tree->new($genom))}
-	      }
-
-            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-            if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
-              {$a_score = 0}
-            else
-              {$a_score = 1}
-              #{$a_score = $label_counts->[1]}
-          }
-	#Otherwise the score is zero
-	else
-	  {
-	    if($do_soln_tree)
-	      {
-		#Add genomes to the solution tree for partial solution output
-		foreach my $genom
-		  (map {($new_label_array->[1]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[1]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[1]}))
-		  {$a_node->addChild(tree->new($genom))}
-		foreach my $genom
-		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[0]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[0]}))
-		    {$a_node->addChild(tree->new($genom))}
-	      }
-
-	    $a_score = 0;
-	  }
-
-        #$t_labels = ($label_counts->[2] ? $label_counts->[2] : 1);
-	#Same as above
-	if(1)#($label_counts->[2] ||
-	#    ($total_counts->[2] && $label_counts->[0])) &&
-	#   ($real_label_counts->[2] + $real_label_counts->[0]) !=
-	#   ($total_counts->[2] + $total_counts->[0]))
-	  {#($t_score,$t_labels) = getRatioResolved($proposed_solution,
-           $t_score = getRatioResolved($proposed_solution,
-				       $snp_data_buffer,
-				       (scalar(@{$new_label_array->[2]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_label_array->[2]},
-					 @{$new_label_array->[0]}] :
-					$new_label_array->[2]),
-				       (scalar(@{$new_label_array->[2]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_relevant_genomes->[2]},
-					 @{$new_relevant_genomes->[0]}] :
-					$new_relevant_genomes->[2]),
-                                       $overall_score_flag,
-				       $t_node,
-				       (scalar(@{$new_label_array->[2]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_counted_scores->[2]},
-					 @{$new_counted_scores->[0]}] :
-					$new_counted_scores->[2]),
-				       1)}
-	elsif(($label_counts->[2] ||
-	       ($total_counts->[2] && $label_counts->[0])) &&
-	      ($real_label_counts->[2] + $real_label_counts->[0]) ==
-	      ($total_counts->[2] + $total_counts->[0]))
-	  {
-	    if($do_soln_tree)
-	      {
-		#Add genomes to the solution tree for partial solution output
-		foreach my $genom
-		  (map {($new_label_array->[2]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[2]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[2]}))
-		    {$t_node->addChild(tree->new($genom))}
-		foreach my $genom
-		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[0]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[0]}))
-		    {$t_node->addChild(tree->new($genom))}
-	      }
-
-            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-            if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
-              {$t_score = 0}
-            else
-              {$t_score = 1}
-              #{$t_score = $label_counts->[2]}
-          }
-	else
-	  {
-	    if($do_soln_tree)
-	      {
-		#Add genomes to the solution tree for partial solution output
-		foreach my $genom
-		  (map {($new_label_array->[2]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[2]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[2]}))
-		    {$t_node->addChild(tree->new($genom))}
-		foreach my $genom
-		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[0]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[0]}))
-		    {$t_node->addChild(tree->new($genom))}
-	      }
-
-	    $t_score = 0;
-	  }
-
-        #$g_labels = ($label_counts->[3] ? $label_counts->[3] : 1);
-	#Same as above
-	if(1)#($label_counts->[3] ||
-	#    ($total_counts->[3] && $label_counts->[0])) &&
-	#   ($real_label_counts->[3] + $real_label_counts->[0]) !=
-	#   ($total_counts->[3] + $total_counts->[0]))
-	  {#($g_score,$g_labels) = getRatioResolved($proposed_solution,
-           $g_score = getRatioResolved($proposed_solution,
-				       $snp_data_buffer,
-				       (scalar(@{$new_label_array->[3]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_label_array->[3]},
-					 @{$new_label_array->[0]}] :
-					$new_label_array->[3]),
-				       (scalar(@{$new_label_array->[3]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_relevant_genomes->[3]},
-					 @{$new_relevant_genomes->[0]}] :
-					$new_relevant_genomes->[3]),
-                                       $overall_score_flag,
-				       $g_node,
-				       (scalar(@{$new_label_array->[3]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_counted_scores->[3]},
-					 @{$new_counted_scores->[0]}] :
-					$new_counted_scores->[3]),
-				       1)}
-	elsif(($label_counts->[3] ||
-	       ($total_counts->[3] && $label_counts->[0])) &&
-	      ($real_label_counts->[3] + $real_label_counts->[0]) ==
-	      ($total_counts->[3] + $total_counts->[0]))
-	  {
-	    if($do_soln_tree)
-	      {
-		#Add genomes to the solution tree for partial solution output
-		foreach my $genom
-		  (map {($new_label_array->[3]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[3]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[3]}))
-		    {$g_node->addChild(tree->new($genom))}
-		foreach my $genom
-		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[0]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[0]}))
-		    {$g_node->addChild(tree->new($genom))}
-	      }
-
-            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-            if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
-              {$g_score = 0}
-            else
-              {$g_score = 1}
-              #{$g_score = $label_counts->[3]}
-          }
-	else
-	  {
-	    if($do_soln_tree)
-	      {
-		#Add genomes to the solution tree for partial solution output
-		foreach my $genom
-		  (map {($new_label_array->[3]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[3]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[3]}))
-		    {$g_node->addChild(tree->new($genom))}
-		foreach my $genom
-		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[0]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[0]}))
-		    {$g_node->addChild(tree->new($genom))}
-	      }
-
-	    $g_score = 0;
-	  }
-
-        #$c_labels = ($label_counts->[4] ? $label_counts->[4] : 1);
-	#Same as above
-	if(1)#($label_counts->[4] ||
-	#    ($total_counts->[4] && $label_counts->[0])) &&
-	#   ($real_label_counts->[4] + $real_label_counts->[0]) !=
-	#   ($total_counts->[4] + $total_counts->[0]))
-	  {#($c_score,$c_labels) = getRatioResolved($proposed_solution,
-           $c_score = getRatioResolved($proposed_solution,
-				       $snp_data_buffer,
-				       (scalar(@{$new_label_array->[4]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_label_array->[4]},
-					 @{$new_label_array->[0]}] :
-					$new_label_array->[4]),
-				       (scalar(@{$new_label_array->[4]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_relevant_genomes->[4]},
-					 @{$new_relevant_genomes->[0]}] :
-					$new_relevant_genomes->[4]),
-                                       $overall_score_flag,
-				       $c_node,
-				       (scalar(@{$new_label_array->[4]}) &&
-					scalar(@{$new_label_array->[0]}) ?
-					[@{$new_counted_scores->[4]},
-					 @{$new_counted_scores->[0]}] :
-					$new_counted_scores->[4]),
-				       1)}
-	elsif(($label_counts->[4] ||
-	       ($total_counts->[4] && $label_counts->[0])) &&
-	      ($real_label_counts->[4] + $real_label_counts->[0]) ==
-	      ($total_counts->[4] + $total_counts->[0]))
-	  {
-	    if($do_soln_tree)
-	      {
-		#Add genomes to the solution tree for partial solution output
-		foreach my $genom
-		  (map {($new_label_array->[4]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[4]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[4]}))
-		    {$c_node->addChild(tree->new($genom))}
-		foreach my $genom
-		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[0]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[0]}))
-		    {$c_node->addChild(tree->new($genom))}
-	      }
-
-            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-            if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
-              {$c_score = 0}
-            else
-              {$c_score = 1}
-              #{$c_score = $label_counts->[4]}
-          }
-	else
-	  {
-	    if($do_soln_tree)
-	      {
-		#Add genomes to the solution tree for partial solution output
-		foreach my $genom
-		  (map {($new_label_array->[4]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[4]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[4]}))
-		    {$c_node->addChild(tree->new($genom))}
-		foreach my $genom
-		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[0]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[0]}))
-		    {$c_node->addChild(tree->new($genom))}
-	      }
-
-	    $c_score = 0;
-	  }
-
-        #$gap_labels = ($label_counts->[5] ? $label_counts->[5] : 1);
-	#Same as above
-	if(1)#($label_counts->[5] ||
-	#    ($total_counts->[5] && $label_counts->[0])) &&
-	#   ($real_label_counts->[5] + $real_label_counts->[0]) !=
-	#   ($total_counts->[5] + $total_counts->[0]))
-	  {#($gap_score,$gap_labels) = getRatioResolved($proposed_solution,
-           $gap_score = getRatioResolved($proposed_solution,
-					 $snp_data_buffer,
-					 (scalar(@{$new_label_array->[5]}) &&
-					  scalar(@{$new_label_array->[0]}) ?
-					  [@{$new_label_array->[5]},
-					   @{$new_label_array->[0]}] :
-					  $new_label_array->[5]),
-					 (scalar(@{$new_label_array->[5]}) &&
-					  scalar(@{$new_label_array->[0]}) ?
-					  [@{$new_relevant_genomes->[5]},
-					   @{$new_relevant_genomes->[0]}] :
-					  $new_relevant_genomes->[5]),
-                                         $overall_score_flag,
-					 $gap_node,
-					 (scalar(@{$new_label_array->[5]}) &&
-					  scalar(@{$new_label_array->[0]}) ?
-					  [@{$new_counted_scores->[5]},
-					   @{$new_counted_scores->[0]}] :
-					  $new_counted_scores->[5]),
-					 1)}
-	elsif(($label_counts->[5] ||
-	       ($total_counts->[5] && $label_counts->[0])) &&
-	      ($real_label_counts->[5] + $real_label_counts->[0]) ==
-	      ($total_counts->[5] + $total_counts->[0]))
-	  {
-	    if($do_soln_tree)
-	      {
-		#Add genomes to the solution tree for partial solution output
-		foreach my $genom
-		  (map {($new_label_array->[5]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[5]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[5]}))
-		    {$gap_node->addChild(tree->new($genom))}
-		foreach my $genom
-		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[0]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[0]}))
-		  {$gap_node->addChild(tree->new($genom))}
-	      }
-
-            #Set the improvement to 0 instead of the ratio resolved if we're higher than 2 from the leaves
-            if(!$overall_score_flag && scalar(@$proposed_solution) > 1)
-              {$gap_score = 0}
-            else
-              {$gap_score = 1}
-              #{$gap_score = $label_counts->[5]}
-          }
-	else
-	  {
-	    if($do_soln_tree)
-	      {
-		#Add genomes to the solution tree for partial solution output
-		foreach my $genom
-		  (map {($new_label_array->[5]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[5]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[5]}))
-		    {$gap_node->addChild(tree->new($genom))}
-		foreach my $genom
-		  (map {($new_label_array->[0]->[$_] ? '* ' : '- ') .
-			  $genome_names->[$new_relevant_genomes
-					  ->[0]->[$_]]}
-		   (0..$#{$new_relevant_genomes->[0]}))
-		  {$gap_node->addChild(tree->new($genom))}
-	      }
-
-	    $gap_score = 0;
-	  }
-
 	##
-	## Average the weighted scores obtained from the relative children's
-	## scores
+	## Recurse for each well to get the score for that well
 	##
 
-#        my $failsafe = (($a_labels + $t_labels + $g_labels + $c_labels + $gap_labels) == 0 && ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 && $dot_labels == 0) || (scalar(grep {$_} @{$label_counts}[1..5]) > 0))  ? 1 : 0);
-	my $children_score = 0;
-#	$children_score = ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ?
-#			    $dot_score : 0) * $label_counts->[0] +
-#			   #Multiply the ratio of real isolated labelled counts
-#			   $a_score *
-#			   #by the total number of label counts that were put
-#			   #down that well to get a relative value of how many
-#			   #labelled genomes at this level of the tree were
-#			   #isolated by the lower level of the tree.  Include
-#			   #the number from the pseudowell only if there are
-#			   #labelled genomes in the real well
-#			   ($label_counts->[1] ?
-#			    ($label_counts->[1] + $label_counts->[0]) : 0) +
-#			   $t_score *
-#			   ($label_counts->[2] ?
-#			    ($label_counts->[2] + $label_counts->[0]) : 0) +
-#			   $g_score *
-#			   ($label_counts->[3] ?
-#			    ($label_counts->[3] + $label_counts->[0]) : 0) +
-#			   $c_score *
-#			   ($label_counts->[4] ?
-#			    ($label_counts->[4] + $label_counts->[0]) : 0) +
-#			   $gap_score *
-#			   ($label_counts->[5] ?
-#			    ($label_counts->[5] + $label_counts->[0]) : 0)) /
-#	   #Divide the number of isolated real labelled genomes above by the
-#	   #total number of labelled genomes below to see how good the answer
-#	   #at the lower level of the tree was
-#	   ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ? $label_counts->[0] : 0) +
-#	    $label_counts->[1] +
-#	    ($label_counts->[1] ? $label_counts->[0] : 0) +
-#	    $label_counts->[2] +
-#	    ($label_counts->[2] ? $label_counts->[0] : 0) +
-#	    $label_counts->[3] +
-#	    ($label_counts->[3] ? $label_counts->[0] : 0) +
-#	    $label_counts->[4] +
-#	    ($label_counts->[4] ? $label_counts->[0] : 0) +
-#	    $label_counts->[5] +
-#	    ($label_counts->[5] ? $label_counts->[0] : 0))
-#	   if($label_counts->[0] ||
-#	      $label_counts->[1] ||
-#	      $label_counts->[2] ||
-#	      $label_counts->[3] ||
-#	      $label_counts->[4] ||
-#	      $label_counts->[5]);
+	$a_score = getRatioResolved($proposed_solution,
+				    $snp_data_buffer,
+				    (scalar(@{$new_label_array->[1]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_label_array->[1]},
+				      @{$new_label_array->[0]}] :
+				     $new_label_array->[1]),
+				    (scalar(@{$new_label_array->[1]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_relevant_genomes->[1]},
+				      @{$new_relevant_genomes->[0]}] :
+				     $new_relevant_genomes->[1]),
+				    $scoring_function,
+				    $a_node,
+				    (scalar(@{$new_label_array->[1]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_counted_scores->[1]},
+				      @{$new_counted_scores->[0]}] :
+				     $new_counted_scores->[1]),
+				    undef,
+				    1);
 
-	$children_score = ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ?
-			    $dot_score : 0) * $label_counts->[0] +
+	$t_score = getRatioResolved($proposed_solution,
+				    $snp_data_buffer,
+				    (scalar(@{$new_label_array->[2]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_label_array->[2]},
+				      @{$new_label_array->[0]}] :
+				     $new_label_array->[2]),
+				    (scalar(@{$new_label_array->[2]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_relevant_genomes->[2]},
+				      @{$new_relevant_genomes->[0]}] :
+				     $new_relevant_genomes->[2]),
+				    $scoring_function,
+				    $t_node,
+				    (scalar(@{$new_label_array->[2]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_counted_scores->[2]},
+				      @{$new_counted_scores->[0]}] :
+				     $new_counted_scores->[2]),
+				    undef,
+				    1);
 
-			   #Multiply the ratio of real isolated labelled counts
-			   $a_score *
-			   #by the total number of label counts that were put
-			   #down that well to get a relative value of how many
-			   #labelled genomes at this level of the tree were
-			   #isolated by the lower level of the tree.  Include
-			   #the number from the pseudowell only if there are
-			   #labelled genomes in the real well
-			   $label_counts->[1] +
-			   $t_score   * $label_counts->[2] +
-			   $g_score   * $label_counts->[3] +
-			   $c_score   * $label_counts->[4] +
-			   $gap_score * $label_counts->[5]) /
+	$g_score = getRatioResolved($proposed_solution,
+				    $snp_data_buffer,
+				    (scalar(@{$new_label_array->[3]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_label_array->[3]},
+				      @{$new_label_array->[0]}] :
+				     $new_label_array->[3]),
+				    (scalar(@{$new_label_array->[3]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_relevant_genomes->[3]},
+				      @{$new_relevant_genomes->[0]}] :
+				     $new_relevant_genomes->[3]),
+				    $scoring_function,
+				    $g_node,
+				    (scalar(@{$new_label_array->[3]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_counted_scores->[3]},
+				      @{$new_counted_scores->[0]}] :
+				     $new_counted_scores->[3]),
+				    undef,
+				    1);
 
-	   #Divide the number of isolated real labelled genomes above by the
-	   #total number of labelled genomes below to see how good the answer
-	   #at the lower level of the tree was
-	   ($label_counts->[0] +
-	    $label_counts->[1] +
-	    $label_counts->[2] +
-	    $label_counts->[3] +
-	    $label_counts->[4] +
-	    $label_counts->[5])
-	   if($label_counts->[0] ||
-	      $label_counts->[1] ||
-	      $label_counts->[2] ||
-	      $label_counts->[3] ||
-	      $label_counts->[4] ||
-	      $label_counts->[5]);
+	$c_score = getRatioResolved($proposed_solution,
+				    $snp_data_buffer,
+				    (scalar(@{$new_label_array->[4]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_label_array->[4]},
+				      @{$new_label_array->[0]}] :
+				     $new_label_array->[4]),
+				    (scalar(@{$new_label_array->[4]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_relevant_genomes->[4]},
+				      @{$new_relevant_genomes->[0]}] :
+				     $new_relevant_genomes->[4]),
+				    $scoring_function,
+				    $c_node,
+				    (scalar(@{$new_label_array->[4]}) &&
+				     scalar(@{$new_label_array->[0]}) ?
+				     [@{$new_counted_scores->[4]},
+				      @{$new_counted_scores->[0]}] :
+				     $new_counted_scores->[4]),
+				    undef,
+				    1);
 
-#	$children_score = ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ? $dot_score : 0) +
-#			   $a_score + $t_score + $g_score + $c_score + $gap_score) /
-#	   #Divide the number of isolated real labelled genomes above by the
-#	   #total number of labelled genomes below to see how good the answer
-#	   #at the lower level of the tree was
-#	   ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ? $dot_labels : 0) +
-#	    $a_labels + $t_labels + $g_labels + $c_labels + $gap_labels + $failsafe)
-#	   if($label_counts->[0] ||
-#	      $label_counts->[1] ||
-#	      $label_counts->[2] ||
-#	      $label_counts->[3] ||
-#	      $label_counts->[4] ||
-#	      $label_counts->[5]);
+	$gap_score = getRatioResolved($proposed_solution,
+				      $snp_data_buffer,
+				      (scalar(@{$new_label_array->[5]}) &&
+				       scalar(@{$new_label_array->[0]}) ?
+				       [@{$new_label_array->[5]},
+					@{$new_label_array->[0]}] :
+				       $new_label_array->[5]),
+				      (scalar(@{$new_label_array->[5]}) &&
+				       scalar(@{$new_label_array->[0]}) ?
+				       [@{$new_relevant_genomes->[5]},
+					@{$new_relevant_genomes->[0]}] :
+				       $new_relevant_genomes->[5]),
+				      $scoring_function,
+				      $gap_node,
+				      (scalar(@{$new_label_array->[5]}) &&
+				       scalar(@{$new_label_array->[0]}) ?
+				       [@{$new_counted_scores->[5]},
+					@{$new_counted_scores->[0]}] :
+				       $new_counted_scores->[5]),
+				      undef,
+				      1);
 
-	#If we're one step up from the leaves, calculate the improvement of the
-	#score that the last SNP added to the previous solution (Note that the
-	#score of the first SNP is the improvement from a score of 0 without
-	#this calculation)
-	if(!$overall_score_flag && scalar(@$proposed_solution) == 1)
+	##
+	## Calculate the weighted scores obtained from the relative
+	## children's scores
+	##
+
+	if($label_counts->[0] || $label_counts->[1] ||
+	   $label_counts->[2] || $label_counts->[3] ||
+	   $label_counts->[4] || $label_counts->[5])
 	  {
-	    ##
-	    ## Calculate the score at one step up from the leaves, calling it
-	    ## the "parents_score"
-	    ##
+	    $children_score =
+	      ((scalar(grep {$_} @{$label_counts}[1..5]) == 0 ?
+		$dot_score : 0) * $label_counts->[0] +
 
-            my $parents_score = 0;
-#            my $parents_total = 0;
-            my $parents_total = $label_counts->[0];
-            if(scalar(grep {$_} @{$label_counts}[1..5]) == 0)
-              {
-                $parents_score = $label_counts->[0] *
-                  ($label_counts->[0] / $total_counts->[0]);
-#                $parents_total = $label_counts->[0];
-              }
-            else
-              {
-#	    my $parents_score = $label_counts->[0] *
-#	      ($real_label_counts->[0] ?
-#	       ($label_counts->[0] / $total_counts->[0]) : 0);
-#	    my $parents_total = $label_counts->[0];
-#print STDERR "\nTHERE ARE ",scalar(@$label_array)," GENOMES BEING ANALYZED\n";
-#print STDERR "TEST: PARENT'S WELL 0 CONTAINS $real_label_counts->[0] REAL LABELLED GENOMES AND $label_counts->[0] TOTAL LABELLED AND $total_counts->[0] TOTAL GENOMES\n";
-	        foreach my $well (1..5)
-	          {
-		    #Add the total label counts for this well and the pseudowell
-		    #multiplied by their ratio of the total number of counts that
-		    #were "real" over the total overall counts.  By real, I mean
-		    #that a genome in a well was added because of a real SNP value
-		    #and not by a pseudowell
-                    #5/26/2011 - I took out the "real" thing because I think it is inflating the returned scores.  By only including the reals, the unreal ones, yet unresolved start to appear resolved in the parent nodes of the solution, but they were included in the children nodes and could essentially make the solution worse than the parent inadvertently, potentially leading to negative improvement scores.
+	       #Multiply the ratio of real isolated labelled counts
+	       #by the total number of label counts that were put
+	       #down that well to get a relative value of how many
+	       #labelled genomes at this level of the tree were
+	       #isolated by the lower level of the tree.  Include
+	       #the number from the pseudowell only if there are
+	       #labelled genomes in the real well
+	       $a_score   * $label_counts->[1] +
+	       $t_score   * $label_counts->[2] +
+	       $g_score   * $label_counts->[3] +
+	       $c_score   * $label_counts->[4] +
+	       $gap_score * $label_counts->[5]) /
 
-#		    $parents_score +=
-#		      ($label_counts->[$well] + $label_counts->[0]) *
-#		        (($label_counts->[$well] + $label_counts->[0]) /
-#		         ($total_counts->[$well] + $total_counts->[0]))
-##		          #Only count these calculations if there are labelled
-##		          #genomes present in the well
-##		          if($label_counts->[$well]);
-#                          if($total_counts->[$well] || $total_counts->[0]);
-
-		    $parents_score +=
-		      $label_counts->[$well] *
-		        ($label_counts->[$well] /
-		         ($total_counts->[$well] +
-			  ($total_counts->[0] - $label_counts->[0])))
-#		          #Only count these calculations if there are labelled
-#		          #genomes present in the real well
-                          if($total_counts->[$well]);
-
-
-#		#Subtract .5 from the larger of the count ratios for this well
-#		#(labelled vs. unlabelled counts, because the lowest score is
-#		#.5 and the largest is 1) and multiply by two to get a score
-#		#between 0 and 1 and then multiply by the number of genomes in
-#		#this well (to ultimately be divided by the total number of
-#		#genomes in all wells)
-#		  ((($label_counts->[$well] > $unlabel_counts->[$well] ?
-#		     $label_counts->[$well] : $unlabel_counts->[$well]) /
-#		    ($label_counts->[$well] || $unlabel_counts->[$well] ?
-#		     ($label_counts->[$well] + $unlabel_counts->[$well]) : 1))
-#		   - .5) * 2 *
-#		     ($label_counts->[$well] + $unlabel_counts->[$well]);
-
-#		    #Add to the total if genomes in the real well exist
-#		    $parents_total += $label_counts->[$well] + $label_counts->[0]
-##		      if($label_counts->[$well]);
-#                      ;
-
-		    $parents_total += $label_counts->[$well];
-
-#		  $label_counts->[$well] + $unlabel_counts->[$well];
-#print STDERR "TEST: PARENT'S WELL $well CONTAINS $real_label_counts->[$well] REAL LABELLED GENOMES AND $label_counts->[$well] TOTAL LABELLED AND $total_counts->[$well] TOTAL GENOMES\n";
-	          }
-              }
-
-	    #Normalize the score using the total number of genomes in all wells
-	    $parents_score /= $parents_total
-	      if($parents_total);
-
-	    ##
-	    ## Now calculate the improvement over the children
-	    ##
-
-	    #Return the ratio of additionally resolved organisms that were
-	    #unresolved in this parent node.  Theoretically, this should not be
-	    #greater than 1 or less than 0
-#print STDERR ("\nTEST: CHILDREN SCORE: $children_score PARENT SCORE: $parents_score FOR CHILD SNP [$snp_names->[$snp]] AND PARENT SNP: [$snp_names->[$proposed_solution->[-1]]] TOTAL SOLUTION SIZE: [",scalar(@$proposed_solution)+1,"]\n");
-	    my $improvement = ($children_score == $parents_score ||
-			       $parents_score == 1 ? 0 :
-			       (($children_score - $parents_score) /
-				(1 - $parents_score)));
-#print STDERR ("\nTEST: CHILDREN SCORE: $children_score PARENT SCORE: $parents_score IMPROVEMENT: $improvement FOR LAST 2 SNPs [$snp_names->[$snp],$snp_names->[$proposed_solution->[0]]]\ndot score $dot_score dot labels $label_counts->[0] dot total $total_counts->[0]\na score $a_score a labels $label_counts->[1] a total $total_counts->[1]\nt score $t_score t labels $label_counts->[2] t total $total_counts->[2]\ng score $g_score g labels $label_counts->[3] g total $total_counts->[3]\nc score $c_score c labels $label_counts->[4] c total $total_counts->[4]\ngap score $gap_score gap labels $label_counts->[5] gap total $total_counts->[5]\n") if($improvement < 0);
-if($improvement < 0)
-{
-            my $parents_score = 0;
-#            my $parents_total = 0;
-            my $parents_total = $label_counts->[0];
-            if($total_counts->[0] && scalar(grep {$_} @{$label_counts}[1..5]) == 0)
-              {
-                $parents_score = $label_counts->[0] *
-                  ($label_counts->[0] / $total_counts->[0]);
-#                $parents_total = $label_counts->[0];
-#print STDERR "SET parents score to $parents_score and total to $parents_total because there were no labeled genomes in the non-dot wells.  (Should not happen)\n";
-              }
-            foreach my $well (1..5)
-              {
-#print STDERR ("WELL: $well ",'$parents_score'," += ($label_counts->[$well] + $label_counts->[0]) * (($label_counts->[$well] + $label_counts->[0]) / ($total_counts->[$well] + $total_counts->[0])) if($label_counts->[$well]);\n");
-
-#                $parents_score +=
-#                  ($label_counts->[$well] + $label_counts->[0]) *
-#                    (($label_counts->[$well] + $label_counts->[0]) /
-#                     ($total_counts->[$well] + $total_counts->[0]))
-#                      #Only count these calculations if there are labelled
-#                      #genomes present in the well
-##                      if($label_counts->[$well]);
-#                      if($total_counts->[$well] || $total_counts->[0]);
-
-                $parents_score +=
-                  $label_counts->[$well] *
-                    ($label_counts->[$well] /
-                     ($total_counts->[$well] +
-		      ($total_counts->[0] - $label_counts->[0])))
-                      #Only count these calculations if there are labelled
-                      #genomes present in the well
-#                      if($label_counts->[$well]);
-                      if($total_counts->[$well]);
-
-#print STDERR ('$parents_total'," += $label_counts->[$well] + $label_counts->[0] if($label_counts->[$well]);\n");
-
-#                $parents_total += $label_counts->[$well] + $label_counts->[0]
-#                  if($label_counts->[$well]);
-
-                $parents_total += $label_counts->[$well]
-                  if($label_counts->[$well]);
-              }
-
-}
-	    return(wantarray ? ($improvement,1) : $improvement);
+		 #Divide the number of isolated real labelled genomes above
+		 #by the total number of labelled genomes below to see how
+		 #good the answer at the lower level of the tree was
+		 ($label_counts->[0] +
+		  $label_counts->[1] +
+		  $label_counts->[2] +
+		  $label_counts->[3] +
+		  $label_counts->[4] +
+		  $label_counts->[5]);
 	  }
-	else
-	  #Return the children score
-	  {
-#print STDERR "\nTEST: RETURNING AVERAGED CHILDREN SCORES: [$children_score] FROM THESE CHILD SCORES: [$dot_score] [$a_score] [$t_score] [$g_score] [$c_score] [$gap_score]\n" if($children_score < 0 || $children_score > 1);
-	    return(wantarray ? ($children_score,1) : $children_score);
-          }
+
+	#Overwrite the childrens' score with the worst score.  The only reason
+	#we're doing the recursions above is to generate a partial solution
+	#tree.  The actual 'worst' score is calculated here (or below for size
+	#1 SNP solutions)
+	if($scoring_function =~ /^worst/i && $first_call)
+	  {$children_score = getWorstRatioResolved([$snp,@$proposed_solution],
+						   $snp_data_buffer,
+						   $label_array,
+						   $relevant_genomes)}
+
+	#Return the children score
+	return($children_score);
       }
     else
       {
+	##
+	## This last step is where the score is actually calculated at each
+	## leaf based on the mix of labelled and unlabelled genomes present.
+	## It's based on a formula.  The scores are returned to be merged into
+	## an average score balanced with the neighboring solution tree leaves.
+	##
+
+	#If we're generating a partial solution tree, construct it
 	if($do_soln_tree)
 	  {
 	    #Construct the solution tree for the partial solutions output
@@ -3913,75 +4034,465 @@ if($improvement < 0)
 	## last level of recursion
 	##
 
-        my $score = 0;
-#        my $total = 0;
-        my $total = $label_counts->[0];
-        if($total_counts->[0] && scalar(grep {$_} @{$label_counts}[1..5]) == 0)
-          {
-            $score = $label_counts->[0] *
-              ($label_counts->[0] / $total_counts->[0]);
-#            $total = $label_counts->[0];
-          }
-        else
-          {
-#	my $score = $label_counts->[0] *
-#	  ($real_label_counts->[0] ?
-#	   ($label_counts->[0] / ($total_counts->[0])) : 0);
-#	my $total = $label_counts->[0];
-            foreach my $well (1..5)
-	      {
-	        #Add the total label counts for this well and the pseudowell
-	        #multiplied by their ratio of the total number of counts
-	        $score +=
-	          #Don't need to test the real well because that's done at the
-	          #if at the end of this equation
-	          $label_counts->[$well] *
-		    ($label_counts->[$well] /
-		     ($total_counts->[$well] +
-		      #Penalize the score by adding the number of
-		      #unlabeled genomes in the dot well to the total
-                      ($total_counts->[0] - $label_counts->[0])))
-		      if($total_counts->[$well]);
-#	          ($label_counts->[$well] + $label_counts->[0]) *
-#		    (($label_counts->[$well] + $label_counts->[0]) /
-#		     ($total_counts->[$well] + $total_counts->[0]))
-##		      if($label_counts->[$well]);
-#                      if($total_counts->[$well] || $total_counts->[0]);
+	my($normal_score);
 
-#	    #Subtract .5 from the larger of the count ratios for this well
-#	    #(labelled vs. unlabelled counts, because the lowest score is
-#	    #.5 and the largest is 1) and multiply by two to get a score
-#	    #between 0 and 1 and then multiply by the number of genomes in
-#	    #this well (to ultimately be divided by the total number of
-#	    #genomes in all wells)
-#	      ((($label_counts->[$well] > $unlabel_counts->[$well] ?
-#		 $label_counts->[$well] : $unlabel_counts->[$well]) /
-#		($label_counts->[$well] || $unlabel_counts->[$well] ?
-#		 ($label_counts->[$well] + $unlabel_counts->[$well]) : 1)) -
-#	       .5) * 2 * ($label_counts->[$well] + $unlabel_counts->[$well]);
-
-#print STDERR ("WELL $well HAS $label_counts->[$well]  REAL AND $label_counts->[0] FAKE LABELED GENOMES AND $total_counts->[$well] + $total_counts->[0] TOTAL GENOMES\n") if($snp_names->[$snp] eq "16.69397102.69409491");
-#	        $total += $label_counts->[$well] + $label_counts->[0]
-##	          if($label_counts->[$well]);
-#                  ;
-	        $total += $label_counts->[$well];
-
-#	      $label_counts->[$well] + $unlabel_counts->[$well];
-	      }
-          }
-#print STDERR "\nNUMBER RESOLVED for SNP $snp_names->[$snp]: [$score] OUT OF: [$total]\n" if($snp_names->[$snp] eq "16.69397102.69409491");
-	#Normalize the score using the total number of genomes in all wells
-        my $normal_score = 0;
-	$normal_score = $score / $total
-	  if($total);
+	if($scoring_function =~ /^orig/i || !$first_call)
+	  {$normal_score = getOriginalScore($label_counts,
+					    $total_counts)}
+	elsif($scoring_function =~ /^worst/i && $first_call)
+	  {$normal_score = getWorstRatioResolved([$snp],
+						 $snp_data_buffer,
+						 $label_array,
+						 $relevant_genomes)}
 
 	#Return the leaves' score
-	return(wantarray ? ($score,$total) : $normal_score);
+	return($normal_score);
       }
   }
 
 
 
+
+
+
+
+
+sub getWorstRatioResolved
+  {
+    use strict;
+
+    my $proposed_solution = $_[0];
+    my $snp_data_buffer   = $_[1];  #Array of SNP strings for each genome
+    my $label_array       = $_[2];  #Array of genome labels indexed by
+                                      #genome
+    my $relevant_genomes  = $_[3];  #Array of genome indexes to consider
+
+    #If the well was empty, return 0
+    if(scalar(@$label_array) == 0)
+      {return(0)}
+
+    my($matched);
+    my $relevant_genome_index = -1;
+    my $state_hash            = {};
+
+    ##
+    ## We're going to build the solution tree from most defined states to least
+    ## defined states and when we are faced with a decision of which branch to
+    ## throw a genome down due to an ambiguous SNP, we'll throw it down the one
+    ## that causes the worst score given the knowledge at that level of the
+    ## tree (note, this may not result in the worst score possible)
+    ##
+
+    print STDERR ("DEBUG: Call to getWorstRatioResolved for proposed SNP ",
+		  "solution [",join(',',@$proposed_solution),"].\n")
+      if($DEBUG);
+
+    #For each genome, sorted by number of states it can possibly be in given
+    #the ambiguous nucleotides, determine the worst possible combo of SNP vals
+    foreach my $relevant_genome_index
+      (sort {my $real_a = $relevant_genomes->[$a];
+	     my $real_b = $relevant_genomes->[$b];
+	     my $a_mult = 1;
+	     map {$a_mult *= getNumStates(getSNP($snp_data_buffer,$real_a,$_))}
+	       @$proposed_solution;
+	     my $b_mult = 1;
+	     map {$b_mult *= getNumStates(getSNP($snp_data_buffer,$real_b,$_))}
+	       @$proposed_solution;
+	     $a_mult <=> $b_mult} (0..$#$relevant_genomes))
+      {
+	#Indexes are stored in the relevant_genomes array of where SNPs are in
+	#the snp_data_buffer.  However, the relevant_genomes array only has the
+	#indexes of the genomes which contain actual information (in other
+	#words, if all the SNPs in a particular genome have dots for all SNPs,
+	#the genome is not considered).
+	my $real_genome_index = $relevant_genomes->[$relevant_genome_index];
+
+	print STDERR ("DEBUG: Processing Genome/SNP Combo: ",
+		      "[$genome_names->[$real_genome_index] / ",
+		      join('',
+			   map {getSNP($snp_data_buffer,$real_genome_index,$_)}
+			   @$proposed_solution),"].\n") if($DEBUG);
+
+	#Keep track of the worst combination of SNP values in a string (/key)
+	my $combo_str = '';
+	my $level = 0; #Basically a SNP count
+	#For each snp index
+	###Can't sort because between genomes, the combo_str needs to be formed
+	###in the same order, so I commented out the comment below and the sort
+	###code:
+	###, sorted by increasing number of possibile states
+	foreach my $snp
+	  (#sort {getNumStates(getSNP($snp_data_buffer,$real_genome_index,$a))
+		  #<=> getNumStates(getSNP($snp_data_buffer,$real_genome_index,
+					   #$b))}
+	   @$proposed_solution)
+	  {
+	    $level++;
+
+	    if(scalar(grep {!exists($state_hash->{$level}->{$_}) ||
+			      !defined($state_hash->{$level}->{$_}
+				       ->{TOTAL_COUNT}) ||
+					 $state_hash->{$level}->{$_}
+					   ->{TOTAL_COUNT} eq ''}
+		      keys(%{$state_hash->{$level}})))
+	      {
+		my @err =
+		  grep {!exists($state_hash->{$level}->{$_}) ||
+			  !defined($state_hash->{$level}->{$_}->{TOTAL_COUNT})}
+		    keys(%{$state_hash->{$level}});
+		error("We have apparently acquired a bad combo string in our ",
+		      "state hash: [",join(',',@err),"].") if($DEBUG);
+	      }
+
+	    #Get the current SNP's value for this genome
+	    my $snp_val .= getSNP($snp_data_buffer,$real_genome_index,$snp);
+
+	    my $num_states = getNumStates($snp_val);
+
+	    $matched = 0;
+
+	    if($num_states == 1)
+	      {
+		if($snp_val =~ /^[a1]$/i)
+		  {$combo_str .= 'a'}
+		elsif($snp_val =~ /^[t2]$/i)
+		  {$combo_str .= 't'}
+		elsif($snp_val =~ /^[g3]$/i)
+		  {$combo_str .= 'g'}
+		elsif($snp_val =~ /^[c4]$/i)
+		  {$combo_str .= 'c'}
+		elsif($snp_val =~ /^[\-5]$/i)
+		  {$combo_str .= '-'}
+		else
+		  {error("Bad SNP value encountered: [$snp_val].")}
+	      }
+	    elsif($num_states == 2)
+	      {
+		if($snp_val =~ /^r$/i)
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('a','g'))[0]}
+		elsif($snp_val =~ /^y$/i)
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('c','t'))[0]}
+		elsif($snp_val =~ /^k$/i)
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('g','t'))[0]}
+		elsif($snp_val =~ /^m$/i)
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('a','c'))[0]}
+		elsif($snp_val =~ /^s$/i)
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('g','c'))[0]}
+		elsif($snp_val =~ /^w$/i)
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('a','t'))[0]}
+	      }
+	    elsif($num_states == 3)
+	      {
+		if($snp_val =~ /^b$/i)
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('c','g','t'))[0]}
+		elsif($snp_val =~ /^d$/i)
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('a','g','t'))[0]}
+		elsif($snp_val =~ /^h$/i)
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('a','c','t'))[0]}
+		elsif($snp_val =~ /^v$/i)
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('a','c','g'))[0]}
+	      }
+	    elsif($num_states == 4)
+	      {
+		if($snp_val =~ /^[nx]$/i)
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('a','t','g','c'))[0]}
+	      }
+	    elsif($num_states == 5)
+	      {
+		if($snp_val eq '.')
+		  {$combo_str .=
+		     (sort {cmpCombo($state_hash->{$level},
+				     $combo_str,
+				     $label_array->[$relevant_genome_index],
+				     $a,$b)} ('a','t','g','c','-'))[0]}
+	      }
+	    else
+	      {error("Bad SNP value encountered: [$snp_val].")}
+
+	    #Keep track of all the counts of genomes for each state
+	    if($label_array->[$relevant_genome_index])
+	      {$state_hash->{$level}->{$combo_str}->{LABEL_COUNT}++}
+	    else
+	      {$state_hash->{$level}->{$combo_str}->{UNLABEL_COUNT}++}
+
+	    $state_hash->{$level}->{$combo_str}->{TOTAL_COUNT}++;
+
+	    print STDERR ("DEBUG: Incrementing state counts for state: ",
+			  "[$combo_str].\nDEBUG: New total count: [",
+			  $state_hash->{$level}->{$combo_str}->{TOTAL_COUNT},
+			  "].\n") if($DEBUG);
+	  }
+      }
+
+    my $sol_size = scalar(@$proposed_solution);
+    my $normal_score =
+      getStatesScore([map {$state_hash->{$sol_size}->{$_}->{LABEL_COUNT}}
+		      #sort {$a cmp $b}
+		      keys(%{$state_hash->{$sol_size}})],
+		     [map {$state_hash->{$sol_size}->{$_}->{TOTAL_COUNT}}
+		      #sort {$a cmp $b}
+		      keys(%{$state_hash->{$sol_size}})]);
+
+    if($DEBUG)
+      {
+	print STDERR ("DEBUG: STATES WITH SCORE [$normal_score]...\n");
+	foreach my $combo (keys(%{$state_hash->{$sol_size}}))
+	  {
+	    print STDERR ("DEBUG: Combo: [$combo] Labels: [",
+			  $state_hash->{$sol_size}->{$combo}->{LABEL_COUNT},
+			  "] Total: [",
+			  $state_hash->{$sol_size}->{$combo}->{TOTAL_COUNT},
+			  "].\n");
+	  }
+      }
+
+    #Return the leaves' score
+    return($normal_score);
+  }
+
+sub cmpCombo
+  {
+    my $level_state_hash = $_[0];
+    my $combo_str        = $_[1];
+    my $is_labeled       = $_[2];
+    my $a                = $_[3];
+    my $b                = $_[4];
+
+    print STDERR ("DEBUG: Call to cmpCombo with combo string [$combo_str], ",
+		  "is_labeled [$is_labeled], a [$a], b [$b].\n",
+		  "DEBUG: State Hash Keys: [",
+		  join(',',keys(%$level_state_hash)),"].\n",
+		  "DEBUG: State Hash Values: [",
+		  join(',',map {$level_state_hash->{$_}->{TOTAL_COUNT}} keys(%$level_state_hash)),"].\n")
+      if($DEBUG);
+
+    if(scalar(grep {!exists($level_state_hash->{$_}) ||
+		      !defined($level_state_hash->{$_}->{TOTAL_COUNT}) ||
+			$level_state_hash->{$_}->{TOTAL_COUNT} eq ''}
+	      keys(%{$level_state_hash})))
+      {
+	my @err =
+	  grep {!exists($level_state_hash->{$_}) ||
+		  !defined($level_state_hash->{$_}->{TOTAL_COUNT})}
+	    keys(%{$level_state_hash});
+	error("We have apparently acquired a bad combo string in our ",
+	      "state hash: [",join(',',@err),"].") if($DEBUG);
+      }
+
+    #If this is a labeled genome (the ordering is different)
+    if($is_labeled)
+      {
+	return(#If combo a exists and its ratio is 1 and...
+	       exists($level_state_hash->{$combo_str.$a}) &&
+	       ($level_state_hash->{$combo_str.$a}->{LABEL_COUNT} /
+		$level_state_hash->{$combo_str.$a}->{TOTAL_COUNT}) == 1 &&
+	       #combo b doesn't exist or is less than 1
+	       (!exists($level_state_hash->{$combo_str.$b}) ||
+	        ($level_state_hash->{$combo_str.$b}->{LABEL_COUNT} /
+		 $level_state_hash->{$combo_str.$b}->{TOTAL_COUNT}) < 1) ?
+	       #then combo b comes before combo a (result is 1)
+	       1 : #Else if combo b exists and its ratio is 1 and...
+	       (exists($level_state_hash->{$combo_str.$b}) &&
+		($level_state_hash->{$combo_str.$b}->{LABEL_COUNT} /
+		 $level_state_hash->{$combo_str.$b}->{TOTAL_COUNT}) == 1 &&
+		#combo a doesn't exist or its ratio is less than 1
+		(!exists($level_state_hash->{$combo_str.$a}) ||
+		 ($level_state_hash->{$combo_str.$a}->{LABEL_COUNT} /
+		  $level_state_hash->{$combo_str.$a}->{TOTAL_COUNT}) < 1) ?
+		#then combo a comes before combo b (result is -1)
+		-1 :
+		#Else if both combos exist and are 1
+		(exists($level_state_hash->{$combo_str.$a}) &&
+		 ($level_state_hash->{$combo_str.$a}->{LABEL_COUNT} /
+		  $level_state_hash->{$combo_str.$a}->{TOTAL_COUNT}) == 1 &&
+		 exists($level_state_hash->{$combo_str.$b}) &&
+		 ($level_state_hash->{$combo_str.$b}->{LABEL_COUNT} /
+		  $level_state_hash->{$combo_str.$b}->{TOTAL_COUNT}) == 1 ?
+		 #Then order by descending number of genomes or...
+		 ($level_state_hash->{$combo_str.$b}->{TOTAL_COUNT} <=>
+		  $level_state_hash->{$combo_str.$a}->{TOTAL_COUNT} ||
+		  #order randomly
+		  (int(rand(2)) ? -1 : 1)) :
+		 #Else, everything move on to the next set of sorting params
+		 0)) ||
+	       #Order by existing to not existing combos or...
+	       (exists($level_state_hash->{$combo_str.$b}) <=>
+	        exists($level_state_hash->{$combo_str.$a}) ||
+	        #If both combos exist (ass. bec. passed thru above & 1 exists)
+		(exists($level_state_hash->{$combo_str.$a}) ?
+		#Pass it down to the next set of sorting params
+		0 : #Else (bec. neither combo exists) order randomly
+		(int(rand(2)) ? -1 : 1))) ||
+	       #Now everything exists and has a ratio less than 1, so...
+	       #order by ascending ratio difference (when this genome is added
+	       #to each state) or (if ratio differences are the same)...
+	       ((((($level_state_hash->{$combo_str.$a}->{LABEL_COUNT} + 1)**2 /
+		   ($level_state_hash->{$combo_str.$a}->{TOTAL_COUNT} + 1)) -
+		  ($level_state_hash->{$combo_str.$a}->{LABEL_COUNT}**2 /
+		   $level_state_hash->{$combo_str.$a}->{TOTAL_COUNT}))) <=>
+	        (((($level_state_hash->{$combo_str.$b}->{LABEL_COUNT} + 1)**2 /
+		   ($level_state_hash->{$combo_str.$b}->{TOTAL_COUNT} + 1)) -
+		  ($level_state_hash->{$combo_str.$b}->{LABEL_COUNT}**2 /
+		   $level_state_hash->{$combo_str.$b}->{TOTAL_COUNT})))) ||
+	       #order by descending number of unlabeled genomes or...
+	       ($level_state_hash->{$combo_str.$b}->{UNLABEL_COUNT} <=>
+		$level_state_hash->{$combo_str.$a}->{UNLABEL_COUNT}) ||
+	       #order randomly
+	       (int(rand(2)) ? -1 : 1));
+      }
+    else
+      {
+	return(#Order by existing to non-existing or...
+	       exists($level_state_hash->{$combo_str.$b}) <=>
+	       exists($level_state_hash->{$combo_str.$a}) ||
+	       #If neither exist
+	       (!exists($level_state_hash->{$combo_str.$a}) ?
+	        #Order randomly, else pass on to the next set of sorting params
+		(int(rand(2)) ? -1 : 1) : 0) ||
+	       #Order by descending ratio difference (when this genome is added
+	       #to each state) or (if ratio differences are the same)...
+	       (((($level_state_hash->{$combo_str.$b}->{LABEL_COUNT}**2 /
+		   $level_state_hash->{$combo_str.$b}->{TOTAL_COUNT}) -
+		  ($level_state_hash->{$combo_str.$b}->{LABEL_COUNT}**2 /
+		   ($level_state_hash->{$combo_str.$b}->{TOTAL_COUNT} + 1))))
+		<=>
+	        ((($level_state_hash->{$combo_str.$a}->{LABEL_COUNT}**2 /
+		   $level_state_hash->{$combo_str.$a}->{TOTAL_COUNT}) -
+		  ($level_state_hash->{$combo_str.$a}->{LABEL_COUNT}**2 /
+		   ($level_state_hash->{$combo_str.$a}->{TOTAL_COUNT} + 1)))))
+	       ||
+	       #Order by descending number of labeled genomes or (if same)...
+	       $level_state_hash->{$combo_str.$b}->{LABEL_COUNT} <=>
+	       $level_state_hash->{$combo_str.$a}->{LABEL_COUNT} ||
+	       #Order randomly
+	       (int(rand(2)) ? -1 : 1)
+	      );
+      }
+  }
+
+sub getOriginalScore
+  {
+    my $label_counts = $_[0];
+    my $total_counts = $_[1];
+
+    my $score = 0;
+    my $total = $label_counts->[0];
+    #If there are things in the "no data" well and no labelled samples in all
+    #the other wells, base the score on the "no data" well
+    if($total_counts->[0] && scalar(grep {$_} @{$label_counts}[1..5]) == 0)
+      {
+	$score = $label_counts->[0] *
+	  ($label_counts->[0] / $total_counts->[0]);
+      }
+    else
+      {
+	foreach my $well (1..5)
+	  {
+	    #Add the total label counts for this well and the pseudowell
+	    #multiplied by their ratio of the total number of counts
+	    $score +=
+	      #Don't need to test the real well because that's done at the
+	      #if at the end of this equation
+	      $label_counts->[$well] *
+		($label_counts->[$well] /
+		 ($total_counts->[$well] +
+		  #Penalize the score by adding the number of
+		  #unlabeled genomes in the dot well to the total
+		  ($total_counts->[0] - $label_counts->[0])))
+		  if($total_counts->[$well]);
+
+	    $total += $label_counts->[$well];
+	  }
+      }
+
+    #Normalize the score using the total number of genomes in all wells
+    my $normal_score = 0;
+    $normal_score = $score / $total
+      if($total);
+
+    return($normal_score);
+  }
+
+#Assumes that all states are unambiguous
+sub getStatesScore
+  {
+    my $state_hash = $_[0];
+    my $label_counts = $_[0]; #Array of counts of labels in each state
+    my $total_counts = $_[1]; #Array of total number of genomes in each state
+
+    #Calculate the score I would get if all data was real
+    my $score = 0;
+    my $total = 0;
+    foreach my $state_index (0..$#$label_counts)
+      {
+	$score += $label_counts->[$state_index]**2 /
+	  $total_counts->[$state_index]
+	    if($total_counts->[$state_index]);
+	$total += $label_counts->[$state_index];
+      }
+
+    return($score / $total);
+  }
+
+sub getNumStates
+  {
+    my $snp_val = $_[0];
+
+    if($snp_val =~ /^[atgc\-12345]$/i)
+      {return(1)}
+    elsif($snp_val =~ /^[rykmsw]$/i)
+      {return(2)}
+    elsif($snp_val =~ /^[bdhv]$/i)
+      {return(3)}
+    elsif($snp_val =~ /^[nx]$/i)
+      {return(4)}
+    elsif($snp_val eq '.')
+      {return(5)}
+  }
 
 
 
@@ -4242,16 +4753,6 @@ sub optimizeSNPs
 	       "haplotype awareness was turned on and the data is extremely ",
 	       "divergent in the region of the current node of the tree.")}
 
-#    #Figure out the max lengths of the genome names and SNP IDs
-#    my $id_len = 0;
-#    foreach my $id (@$genome_names)
-#      {$id_len = length($id) if(length($id) > $id_len)}
-#    my $snp_pos_len = 0;
-#    foreach my $snp_id (@$snp_names)
-#      {$snp_pos_len = length($snp_id) if(length($snp_id) > $snp_pos_len)}
-#
-#    my $snp_set_num = 1;
-
     #Sort the array reference keys based on the first SNP ID in each group of
     #equivalent SNPs, then eliminate the array reference keys entirely to
     #simply return an array of equivalent SNP ID arrays
@@ -4264,49 +4765,6 @@ sub optimizeSNPs
 	    sort {$equivalent_snps->{$a}->[0] <=>
 		    $equivalent_snps->{$b}->[0]}
 	    keys(%$equivalent_snps)]);
-
-#    #$snp_set is an array reference to a set of equivalent SNP solutions
-#    foreach my $snp_set
-#      (sort {$equivalent_snps->{$a}->[0] <=> $equivalent_snps->{$b}->[0]}
-#       keys(%$equivalent_snps))
-#      {
-#	print(join(' ',map {$snp_names->[$_]} @{$equivalent_snps->{$snp_set}}),
-#	      "\n");
-#	$snp_set_num++;
-#      }
-#
-#    #Print the coordinate column headers
-#    print(' ' x ($id_len),
-#	  "\t",
-#	  join(' ',
-#	       map {' ' x ($snp_pos_len -
-#			   length($snp_names->[$equivalent_snps->{$_}->[0]])) .
-#			     $snp_names->[$equivalent_snps->{$_}->[0]]}
-#	       sort {$equivalent_snps->{$a}->[0] <=>
-#		       $equivalent_snps->{$b}->[0]}
-#	       keys(%$equivalent_snps)),
-#	  "\n\n");
-#    my $cnt = 1;
-#    foreach my $id (@$genome_names)
-#      {
-#	verbose("Printing row: $cnt") if($verbose);
-#	print($id,                            #Genome ID
-#	      ' ' x ($id_len - length($id)),  #Append with white space to even
-#		                              #up columns
-#	      "\t",                           #Tab over columns
-#	      join(' ',  #This joins each column with one space
-#	                 #The following line converts the SNP position to the
-#	                 #SNP value prepended with white space to right justify
-#		   map {' ' x ($snp_pos_len - 1) .
-#			  getSNP($snp_data_buffer,
-#				 ($cnt - 1),
-#				 $equivalent_snps->{$_}->[0])}
-#		   sort {$equivalent_snps->{$a}->[0] <=>
-#			   $equivalent_snps->{$b}->[0]}
-#		   keys(%$equivalent_snps)),
-#	      "\n");
-#	$cnt++;
-#      }
   }
 
 

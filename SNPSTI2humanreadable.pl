@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-#Generated using perl_script_template.pl 1.44
+#Generated using perl_script_template.pl 1.43
 #Robert W. Leach
 #rwleach@ccr.buffalo.edu
 #Center for Computational Research
@@ -682,8 +682,8 @@
 #<http://www.gnu.org/philosophy/why-not-lgpl.html>.
 
 #These variables (in main) are used by getVersion() and usage()
-my $software_version_number = '1.8';
-my $created_on_date         = '3/27/2012';
+my $software_version_number = '1.1';
+my $created_on_date         = '3/1/2012';
 
 ##
 ## Start Main
@@ -695,26 +695,16 @@ use File::Glob ':glob';
 
 #Declare & initialize variables.  Provide default values here.
 my($outfile_suffix); #Not defined so input can be overwritten
-my @input_files          = ();
-my @stderr_files         = ();
-my @sample_info_files    = ();
-my @default_desc_columns = (2,3,4);
-my @desc_columns         = ();
-my $desc_delimiter       = '/';
-my @default_desc_prepends= ('Main-','Major-','Minor-');
-my @desc_prepends        = ();
-my $node_name_pattern    = '^[^\(]+';
-my @default_states       = ('unk','low','mid','hi','vhi','vvh');
-my @states               = ();
-my @outdirs              = ();
-my $current_output_file  = '';
-my $help                 = 0;
-my $version              = 0;
-my $overwrite            = 0;
-my $noheader             = 0;
-my $error_limit          = 50;
-my $score1_min           = 0;
-my $score2_min           = 0;
+my @input_files         = ();
+my @outdirs             = ();
+my $current_output_file = '';
+my $help                = 0;
+my $version             = 0;
+my $overwrite           = 0;
+my $noheader            = 0;
+my $warn_report_limit   = 3;
+my $error_report_limit  = 0;
+my $branch_string       = '.ATGC-';
 
 #These variables (in main) are used by the following subroutines:
 #verbose, error, warning, debug, getCommand, quit, and usage
@@ -725,37 +715,24 @@ my $DEBUG         = 0;
 my $ignore_errors = 0;
 
 my $GetOptHash =
-  {'i|input-file|greedy-file=s'
-                        => sub {push(@input_files,     #REQUIRED unless <> is
-			             [sglob($_[1])])}, #         supplied
-   '<>'                 => sub {push(@input_files,     #REQUIRED unless -i is
-				     [sglob($_[0])])}, #         supplied
-   'e|stderr-file=s'    => sub {push(@stderr_files,    #OPTIONAL [none]
-			             [sglob($_[1])])},
-   's|sampleinfo-file=s'=> sub {push(@sample_info_files,
-			             [sglob($_[1])])}, #OPTIONAL [none]
-   'd|node-desc-col=s'  => sub {push(@desc_columns,    #OPTIONAL [2,3,4]
-			             sglob($_[1]))},
-   'desc-prepends=s'    => sub {push(@desc_columns,    #OPTIONAL ['Main-',
-			             sglob($_[1]))},   #     'Major-','Minor-']
-   'convert-states=s'   => sub {push(@states,          #OPTIONAL ['unk','low',
-			             sglob($_[1]))},   #'mid','hi','vhi','vvh']
-   'desc-delimiter=s'   => \$desc_delimiter,           #OPTIONAL [/]
-   'p|node-patern=s'    => \$node_name_pattern,        #OPTIONAL ['^[^\(]+']
-   'loc1-score-min=s'   => \$score1_min,               #OPTIONAL [0]
-   'loc2-score-min=s'   => \$score2_min,               #OPTIONAL [0]
-   'o|outfile-suffix=s' => \$outfile_suffix,           #OPTIONAL [undef]
-   'outdir=s'           => sub {push(@outdirs,         #OPTIONAL
-				     [sglob($_[1])])},
-   'force|overwrite'    => \$overwrite,                #OPTIONAL [Off]
-   'ignore'             => \$ignore_errors,            #OPTIONAL [Off]
-   'verbose:+'          => \$verbose,                  #OPTIONAL [Off]
-   'quiet'              => \$quiet,                    #OPTIONAL [Off]
-   'debug:+'            => \$DEBUG,                    #OPTIONAL [Off]
-   'help'               => \$help,                     #OPTIONAL [Off]
-   'version'            => \$version,                  #OPTIONAL [Off]
-   'noheader|no-header' => \$noheader,                 #OPTIONAL [Off]
-   'error-type-limit=s' => \$error_limit,              #OPTIONAL [0]
+  {'i|input-file=s'       => sub {push(@input_files,     #REQUIRED unless <> is
+				       [sglob($_[1])])}, #         supplied
+   '<>'                   => sub {push(@input_files,     #REQUIRED unless -i is
+				       [sglob($_[0])])}, #         supplied
+   'b|branch-order=s'     => \$branch_string,            #OPTIONAL [.ATGC-]
+   'o|outfile-suffix=s'   => \$outfile_suffix,           #OPTIONAL [undef]
+   'outdir=s'             => sub {push(@outdirs,         #OPTIONAL [none]
+				       [sglob($_[1])])},
+   'force|overwrite'      => \$overwrite,                #OPTIONAL [Off]
+   'ignore'               => \$ignore_errors,            #OPTIONAL [Off]
+   'verbose:+'            => \$verbose,                  #OPTIONAL [Off]
+   'quiet'                => \$quiet,                    #OPTIONAL [Off]
+   'debug:+'              => \$DEBUG,                    #OPTIONAL [Off]
+   'help'                 => \$help,                     #OPTIONAL [Off]
+   'version'              => \$version,                  #OPTIONAL [Off]
+   'noheader|no-header'   => \$noheader,                 #OPTIONAL [Off]
+   'warn-report-limit=s'  => \$warn_report_limit,        #OPTIONAL [3]
+   'error-report-limit=s' => \$error_report_limit,       #OPTIONAL [3]
   };
 
 #If there are no arguments and no files directed or piped in
@@ -802,14 +779,6 @@ if($quiet && ($verbose || $DEBUG))
     error('You cannot supply the quiet and (verbose or debug) flags ',
 	  'together.');
     quit(-2);
-  }
-
-if(scalar(@outdirs) && !defined($outfile_suffix))
-  {
-    error("An outfile suffix (-o) is required if an output directory ",
-	  "(--outdir) is supplied.  Note, you may supply an empty string to ",
-	  "name the output files the same as the input files.");
-    quit(-8);
   }
 
 #If standard input has been redirected in
@@ -860,12 +829,11 @@ if(!isStandardInputFromTerminal())
 	  {@input_files = (['-'])}
       }
   }
-debug(1);
 
 #Warn users when they turn on verbose and output is to the terminal
 #(implied by no outfile suffix checked above) that verbose messages may be
 #uncleanly overwritten
-if($verbose && !defined($outfile_suffix) && isStandardOutputToTerminal())
+if($verbose && !defined($outfile_suffix) &&isStandardOutputToTerminal())
   {warning('You have enabled --verbose, but appear to possibly be ',
 	   'outputting to the terminal.  Note that verbose messages can ',
 	   'interfere with formatting of terminal output making it ',
@@ -925,25 +893,22 @@ if(scalar(@outdirs))
 	  }
       }
   }
-debug(2);
 
 #Check to make sure previously generated output files won't be over-written
 #Note, this does not account for output redirected on the command line
-if(defined($outfile_suffix))
+if(!$overwrite && defined($outfile_suffix))
   {
     my $existing_outfiles = [];
-    my $unique_out_check  = {};
-    my $nonunique_found   = 0;
-    my $set_num           = 0;
+    my $set_num = 0;
     foreach my $input_file_set (@input_files)
       {
 	my $file_num = 0;
 	#For each output file *name* (this will contain the input file name's
 	#path if it was supplied)
-	foreach my $infile (@$input_file_set)
+	foreach my $output_file (map {($_ eq '-' ? $outfile_stub : $_)
+					. $outfile_suffix}
+				 @$input_file_set)
 	  {
-	    my $output_file = ($infile eq '-' ? $outfile_stub : $infile) .
-	      $outfile_suffix;
 	    #If at least 1 output directory was supplied
 	    if(scalar(@outdirs))
 	      {
@@ -1029,72 +994,17 @@ if(defined($outfile_suffix))
 
 	    $file_num++;
 	    push(@$existing_outfiles,$output_file) if(-e $output_file);
-	    if(exists($unique_out_check->{$output_file}))
-	      {$nonunique_found = 1}
-	    push(@{$unique_out_check->{$output_file}},$infile);
 	  }
 	$set_num++;
       }
 
-    if(!$overwrite && scalar(@$existing_outfiles))
+    if(scalar(@$existing_outfiles))
       {
 	error("Files exist: [@$existing_outfiles].  Use --overwrite to ",
 	      "continue.  E.g.:\n",getCommand(1),' --overwrite');
-	quit(-5) unless($nonunique_found);
-      }
-
-    if($nonunique_found)
-      {
-	error('The following output file names overlap with the indicated ',
-	      'input file names and will be overwritten.  Please make sure ',
-	      'each similarly named input file outputs to a different output ',
-	      'directory.  Offending file name conflicts: [',
-	      join(',',map {"$_ is written to by [" .
-			      join(',',@{$unique_out_check->{$_}}) . "]"}
-		   (keys(%$unique_out_check))),"].");
-	quit(-9);
+	quit(-5);
       }
   }
-debug(3);
-
-#Error check the node description column numbers with the prepend strings for
-#the sample info file
-if(scalar(@desc_columns) && scalar(@desc_prepends) &&
-   scalar(@desc_columns) != scalar(@desc_prepends))
-  {
-    error("--desc-prepends and --node-desc-col must each have the same ",
-	  "number of space-delimited values.  [",scalar(@desc_prepends),
-	  "] prepend values and [",scalar(@desc_columns),
-	  "] columns were supplied.");
-    quit(4);
-  }
-
-#Error-check the node description column numbers
-if(scalar(grep {$_ < 1} @desc_columns))
-  {
-    my @errors = grep {$_ < 1} @desc_columns;
-    error("Ivalid values supplied to --node-desc-col: [@errors].  Must be ",
-	  "integers greater than 0.");
-    quit(5);
-  }
-
-#Handle the node description column number defaults
-my @desc_indexes = ();
-if(scalar(@desc_columns))
-  {@desc_indexes = map {$_ - 1} @desc_columns}
-else
-  {@desc_indexes = map {$_ - 1} @default_desc_columns}
-
-#Set the prepend strings for the node descriptions of the sample info file
-if(scalar(@desc_prepends) == 0 &&
-   scalar(@desc_indexes) == scalar(@default_desc_prepends))
-  {@desc_prepends = @default_desc_prepends}
-else
-  {@desc_prepends = map {''} @desc_indexes}
-
-#Set default states if necessary
-if(scalar(@states) == 0)
-  {@states = @default_states}
 
 #Create the output directories
 if(scalar(@outdirs))
@@ -1115,7 +1025,6 @@ if(scalar(@outdirs))
 	  }
       }
   }
-debug(4);
 
 verbose('Run conditions: ',getCommand(1));
 
@@ -1130,31 +1039,8 @@ if(!isStandardOutputToTerminal() && !$noheader)
 	 '#',scalar(localtime($^T)),"\n",
 	 '#',getCommand(1),"\n");}
 
-#Print the column headers
-if(!defined($outfile_suffix))
-  {
-    print("#Note: A score of 1 doesn't necessarily indicate a perfect ",
-	  "solution when given ambiguous input or data for which there are ",
-	  "missing values.\n",
-	  "#\"States\" are given in the format in which they were input to ",
-	  "SNPSTI.pl.  If SNPSTI-convert.pl was used, you must convert these ",
-	  "states back using the original cutoffs to make sense of them.\n",
-	  "#Equivalent loci (in the sense of resolving power, not state) ",
-	  "will be shown comma-delimited.\n",
-	  "#Node\t",(scalar(@sample_info_files) ? "Node Description\t" : ''),
-	  "Greedy Num\tNum Target Samples with Real ",
-	  "Values\tTotal Num Samples with Real Values\t",
-	  "Num Locus 1 States Targets Exist in\t",
-	  "Num Locus 2 States Targets Exist in\tLocus 1\t",
-	  "Score Locus 1\tLocus 2\tScore Locus 2\t","States(Targets/Total)\t",
-	  "Call Locus 1\t","Call Locus 2\t",
-	  "Specificity Combined (and logic)\t",
-	  "Sensitivity Combined (and logic)\t",
-	  "Specificity Combined (or logic)\t",
-	  "Sensitivity Combined (or logic)\t","Specificity Locus 1\t",
-	  "Sensitivity Locus 1\t","Specificity Locus 2\t",
-	  "Sensitivity Locus 2","\n");
-  }
+my @branch_order = split(//,$branch_string);
+my $num_branches = scalar(@branch_order);
 
 #For each input file set
 my $set_num = 0;
@@ -1164,92 +1050,10 @@ foreach my $input_file_set (@input_files)
     #For each output file *name* (this will contain the input file name's
     #path if it was supplied)
 
-    my $stderr_file_set = [];
-    if(scalar(@stderr_files) == scalar(@input_files) &&
-       scalar(@$input_file_set) == scalar(@{$stderr_files[$set_num]}))
-      {$stderr_file_set = $stderr_files[$set_num]}
-    elsif(scalar(@$input_file_set) == scalar(@stderr_files) &&
-	  scalar(@stderr_files) == scalar(grep {scalar(@$_) == 1}
-					  @stderr_files))
-      {$stderr_file_set = [map {$_[0]} @stderr_files]}
-    elsif(scalar(@stderr_files))
-      {
-	error("Cannot match up standard error file sets with the partial ",
-	      "greedy solution file sets.  There are [",scalar(@input_files),
-	      "] input file sets, [",scalar(@$input_file_set),
-	      "] files in the first input file set, [",scalar(@stderr_files),
-	      "] SNPSTI standard error file sets, and [",
-	      scalar(@{$stderr_files[0]}),
-	      "] files in the first SNPSTI standard error file set.");
-	debug();
-	quit(2);
-      }
-
-    my $sampleinfo_file_set = [];
-    if(scalar(@sample_info_files) == scalar(@input_files) &&
-       scalar(@$input_file_set) == scalar(@{$sample_info_files[$set_num]}))
-      {$sampleinfo_file_set = $sample_info_files[$set_num]}
-    elsif(scalar(@$input_file_set) == scalar(@sample_info_files) &&
-	  scalar(@sample_info_files) == scalar(grep {scalar(@$_) == 1}
-					       @sample_info_files))
-      {$sampleinfo_file_set = [map {$_[0]} @sample_info_files]}
-    elsif(scalar(@input_files) == scalar(@sample_info_files) &&
-	  scalar(@sample_info_files) == scalar(grep {scalar(@$_) == 1}
-					       @sample_info_files))
-      {$sampleinfo_file_set = $sample_info_files[$set_num]}
-    elsif(1 == scalar(@sample_info_files) &&
-	  1 == scalar(grep {scalar(@$_) == 1} @sample_info_files))
-      {$sampleinfo_file_set = $sample_info_files[0]}
-    elsif(scalar(@sample_info_files) == 1 &&
-	  scalar(@{$sample_info_files[0]}) == scalar(@input_files))
-      {$sampleinfo_file_set = [$sample_info_files[0]->[$set_num]]}
-    elsif(scalar(@sample_info_files))
-      {
-	error("Cannot match up sample info file sets with the partial greedy ",
-	      "solution file sets.  There are [",scalar(@input_files),"] ",
-	      "input file sets, [",scalar(@$input_file_set),"] files in the ",
-	      "first input file set, [",scalar(@sample_info_files),"] SNPSTI ",
-	      "standard error file sets, and [",
-	      scalar(@{$sample_info_files[0]}),
-	      "] files in the first SNPSTI standard error file set.");
-	quit(7);
-      }
-
     #For each input file
     foreach my $input_file (@$input_file_set)
       {
-	my $stderr_file = '';
-	if(scalar(@$stderr_file_set) == 1)
-	  {$stderr_file = $stderr_file_set->[0]}
-	elsif(scalar(@$stderr_file_set) == scalar(@$input_file_set))
-	  {$stderr_file = $stderr_file_set->[$file_num]}
-	elsif(scalar(@$stderr_file_set))
-	  {
-	    error("Cannot match up standard error files with the partial ",
-		  "greedy solution files.");
-	    quit(3);
-	  }
-
-	my $sampleinfo_file = '';
-	if(scalar(@$sampleinfo_file_set) == 1)
-	  {$sampleinfo_file = $sampleinfo_file_set->[0]}
-	elsif(scalar(@$sampleinfo_file_set) == scalar(@$input_file_set))
-	  {$sampleinfo_file = $sampleinfo_file_set->[$file_num]}
-	elsif(scalar(@$sampleinfo_file_set))
-	  {
-	    error("Cannot match up sample info files with the partial ",
-		  "greedy solution files.");
-	    quit(8);
-	  }
-
-	#Get desc_hash->{$node_name}->{DESC|NUM} = string|number
-	my $desc_hash = {};
-	if(scalar(@sample_info_files))
-	  {$desc_hash = getDescHash($sampleinfo_file,
-				    \@desc_indexes,
-				    \@desc_prepends,
-				    $desc_delimiter,
-				    $node_name_pattern)}
+	my $file_num = 0;
 
 	#If an output file name suffix has been defined
 	if(defined($outfile_suffix))
@@ -1347,7 +1151,7 @@ foreach my $input_file_set (@input_files)
 	      }
 	  }
 
-	if(defined($outfile_suffix))
+	if(defined($outfile_suffix) || scalar(@outdirs))
 	  {
 	    #Open the output file
 	    if(!open(OUTPUT,">$current_output_file"))
@@ -1355,7 +1159,6 @@ foreach my $input_file_set (@input_files)
 		#Report an error and iterate if there was an error
 		error("Unable to open output file: [$current_output_file].\n",
 		      $!);
-		$file_num++;
 		next;
 	      }
 	    else
@@ -1370,88 +1173,19 @@ foreach my $input_file_set (@input_files)
 		  '#',getCommand(1),"\n") unless($noheader);
 	  }
 
-	my $line_num     = 0;
-	my $verbose_freq = 100;
-	my $equivsec     = 0;   #Section with equivalent solutions
-	my $equiv_hash   = {};
-	my $node         = $input_file;
-
-	if($stderr_file ne '')
-	  {
-	    #Open the input file
-	    if(!open(SNPSTIERR,$stderr_file))
-	      {
-		#Report an error and iterate if there was an error
-		error("Unable to open SNPSTI error file: [$stderr_file].\n$!");
-		$file_num++;
-		next;
-	      }
-	    else
-	      {verbose('[',$stderr_file,'] ','Opened SNPSTI error file.')}
-
-	    #For each line in the current SNPSTI error file
-	    while(getLine(*SNPSTIERR))
-	      {
-		$line_num++;
-		verboseOverMe('[',$stderr_file,
-			      "] Reading line: [$line_num].")
-		  unless($line_num % $verbose_freq);
-
-		if(/These SNPs are equivalent/)
-		  {$equivsec = 1}
-		elsif(/Reading tree file/)
-		  {
-		    $equivsec = 0;
-		  }
-		elsif(/Checking analysis nodes: \[([^\]]+)\]\.$/)
-		  {
-		    $node = $1;
-		    if($node =~ s/,.*//)
-		      {error("Multiple nodes per SNPSTI run were detected.  ",
-			     "This script only works on the first node in an ",
-			     "analysis.")}
-		    last;
-		  }
-		elsif($equivsec)
-		  {
-		    s/^\s+\[//;
-		    chomp;
-		    s/\]\s*$//;
-		    foreach my $equiv (split(/,/,$_))
-		      {$equiv_hash->{$equiv}=$_}
-		  }
-	      }
-
-	    close(SNPSTIERR);
-
-	    verbose('[',$stderr_file,'] ',
-		    'SNPSTI error file done.  Time taken: [',
-		    scalar(markTime()),' Seconds].');
-	  }
-
-
-
 	#Open the input file
 	if(!open(INPUT,$input_file))
 	  {
 	    #Report an error and iterate if there was an error
 	    error("Unable to open input file: [$input_file].\n$!");
-	    $file_num++;
 	    next;
 	  }
 	else
 	  {verbose('[',($input_file eq '-' ? $outfile_stub : $input_file),'] ',
 		   'Opened input file.')}
 
-	$line_num     = 0;
-	$verbose_freq = 100;
-	my $iteration = 0;
-	my $size      = 0;
-	my $hash      = {};
-	my $state1    = '';
-	my $state2    = '';
-	my $done      = 0;
-	my $got_score = 1;
+	my $line_num     = 0;
+	my $verbose_freq = 100;
 
 	#For each line in the current input file
 	while(getLine(*INPUT))
@@ -1462,101 +1196,40 @@ foreach my $input_file_set (@input_files)
 			  "] Reading line: [$line_num].")
 	      unless($line_num % $verbose_freq);
 
-	    #Look for the GREEDY ITER # SIZE 1 and GREEDY ITER # SIZE 2
-	    #sections
-	    if(/^GREEDY ITER (\d+) SIZE (\d+)\s*$/)
+	    chomp;
+	    if(/^([^\t]+\t([^\t]+) \t)([_10 ]+)$/)
 	      {
-		if(!$got_score && $2 == 1)
+		my $solution     = $1;
+		my $snp_name_str = $2;
+		$snp_name_str    =~ s/^ +//;
+		$snp_name_str    =~ s/ +$//;
+		my $leaf_str     = $3;
+		$leaf_str        =~ s/^ +//;
+		$leaf_str        =~ s/ +$//;
+		my $levels       = scalar(split(/ /,$snp_name_str));
+		my @leaves       = split(/ /,$leaf_str);
+		my $one_indexes  = [];
+
+		foreach my $i (0..$#leaves)
+		  {push(@$one_indexes,$i) if($leaves[$i] eq "1")}
+		debug("Indexes of the ones: [",join(' ',@$one_indexes),"]\n");
+		print($solution);
+		foreach my $one_index (@$one_indexes)
 		  {
-		    error("Could not find score for iteration [$iteration].");
-		    delete($hash->{$iteration});
+		    my $val_str="";
+		    foreach my $level (reverse(0..($levels - 1)))
+		      {
+			my $val_index = int($one_index /
+					    ($num_branches**$level)) %
+					      $num_branches;
+			$val_str .= $branch_order[$val_index];
+		      }
+		    print("$val_str ");
 		  }
-		$got_score = 0;
-		$iteration  = $1;
-		$size       = $2;
-		$state1     = '';
-		$state2     = '';
-
-		debug("Starting iteration [$iteration] size [$size].");
+		print("\n");
 	      }
-	    #Keep track of the current state (locus names and values).  In each
-	    #state, count the number of target samples and the total number of
-	    #samples
-	    elsif(($size == 1) &&
-		  /^ ([^ ]+): (\S+) \(real: (\d+)\/(\d+), no data: (\d+)\/(\d+)/)
-	      {
-		$hash->{$iteration}->{$size}->{LOCUS} = $1;
-		if($2 eq 'gap')
-		  {$state1 = '-'}
-		else
-		  {$state1 = $2}
-		$hash->{$iteration}->{REALTOTAL} += $3;
-		$hash->{$iteration}->{ALLTOTAL}  += $4;
-		#[[locus name,value,num real targets,real total,num no data
-		#  targets,total no data],...]
-		push(@{$hash->{$iteration}->{$size}->{STATES}},
-		     [$1,$state1,$3,$4,$5,$6]);
-
-		debug("State: [$1,$state1,$3,$4,$5,$6].");
-	      }
-	    elsif(($size == 2) &&
-		  /^  ([^ ]+): (\S+) \(real: (\d+)\/(\d+), no data: (\d+)\/(\d+)/)
-	      {
-		$hash->{$iteration}->{$size}->{LOCUS} = $1;
-		if($2 eq 'gap')
-		  {$state2 = '-'}
-		else
-		  {$state2 = $2}
-		#[[locus name,value,num real targets,real total,num no data
-		#  targets,total no data],...]
-		push(@{$hash->{$iteration}->{$size}->{STATES}},
-		     [$1,"$state1$state2",$3,$4,$5,$6]);
-
-		debug("State: [$1,$state1$state2,$3,$4,$5,$6].");
-	      }
-	    elsif(($size == 2) &&
-		  /^ ([^ ]+): (\S+) \(real: (\d+)\/(\d+), no data: (\d+)\/(\d+)/)
-	      {
-		#[[locus name,value,num real targets,real total,num no data
-		#  targets,total no data],...]
-		$hash->{$iteration}->{$size}->{LOCUS} = $1;
-		if($2 eq 'gap')
-		  {$state1 = '-'}
-		else
-		  {$state1 = $2}
-
-		debug("New state: [$state1].");
-	      }
-	    #At the end of the greedy iteration, record the score for each of
-	    #the first 1 or 2 loci
-	    elsif(/^Greedy set \d+: \[\[[^\]]+\]:\(([^\)]+)\),\[[^\]]+]:\(([^\)]+)/)
-	      {
-		$hash->{$iteration}->{1}->{SCORE} = $1;
-		$hash->{$iteration}->{2}->{SCORE} = $2;
-		$got_score = 1;
-
-		debug("Scores: [$hash->{$iteration}->{1}->{SCORE},",
-		      "$hash->{$iteration}->{2}->{SCORE}].");
-	      }
-	    #This is if the whole greedy solution is only 1 locus
-	    elsif(/^Greedy set \d+: \[\[[^\]]+\]:\(([^\)]+)/)
-	      {
-		$hash->{$iteration}->{1}->{SCORE} = $1;
-		$got_score = 1;
-
-		debug("Scores: [$hash->{$iteration}->{1}->{SCORE}].");
-	      }
-	    elsif(/^Final/)
-	      {
-		debug("Stopping partial file parse.");
-		$done = 1;
-		last;
-	      }
-	    elsif($_ !~ /GREEDY ITERATION|^\s/)
-	      {
-		chomp;
-		error("Unable to parse line: [$_].");
-	      }
+	    else
+	      {print("$_\n");}
 	  }
 
 	close(INPUT);
@@ -1564,216 +1237,6 @@ foreach my $input_file_set (@input_files)
 	verbose('[',($input_file eq '-' ? $outfile_stub : $input_file),'] ',
 		'Input file done.  Time taken: [',scalar(markTime()),
 		' Seconds].');
-
-	#Check to see if the last solution was completed
-	unless($got_score)
-	  {
-	    error("Could not find score for iteration [$iteration].");
-	    delete($hash->{$iteration});
-	  }
-
-	if(!$done)
-	  {error("Input file [$input_file] appears to be incomplete.")}
-
-	#Now I want to go through the greedy solutions and remove any which do
-	#not meet these criteria: There must not be real data for target
-	#samples in more than 2 states at size 1 and there must not be real
-	#data for target samples in more than 4 states at size 2.  The score at
-	#size 1 must be greater-than or equal-to 0.4.  The score at size 2 must
-	#be greater than or equal to score2_min.  If the size 2 criteria are
-	#not met, you only throw out size 2.  If the criteria for size 1 is not
-	#met, you throw out both sizees 1 and 2.
-	my $filtered_hash = {};
-	foreach my $iteration (keys(%$hash))
-	  {
-	    my $num1states =
-	      scalar(grep {$_->[2]} @{$hash->{$iteration}->{1}->{STATES}});
-	    if($hash->{$iteration}->{1}->{SCORE} >= $score1_min)# && $num1states < 3)
-	      {
-		debug("Keeping locus 1 of iteration [$iteration] because (",
-		      "$hash->{$iteration}->{1}->{SCORE} >= $score1_min && ",
-		      "$num1states < 3).");
-
-		$filtered_hash->{$iteration}->{1}->{SCORE} =
-		  $hash->{$iteration}->{1}->{SCORE};
-		$filtered_hash->{$iteration}->{1}->{STATES} =
-		  $hash->{$iteration}->{1}->{STATES};
-		$filtered_hash->{$iteration}->{1}->{NUMSTATES} = $num1states;
-		$filtered_hash->{$iteration}->{1}->{LOCUS} =
-		  $hash->{$iteration}->{1}->{LOCUS};
-		$filtered_hash->{$iteration}->{REALTOTAL} =
-		  $hash->{$iteration}->{REALTOTAL};
-		$filtered_hash->{$iteration}->{ALLTOTAL} =
-		  $hash->{$iteration}->{ALLTOTAL};
-
-		if(exists($hash->{$iteration}->{2}) &&
-		   $hash->{$iteration}->{2}->{SCORE} >= $score2_min)# &&
-		   #$num2states < 5)
-		  {
-		    my $num2states =
-		      scalar(grep {$_->[2]}
-			     @{$hash->{$iteration}->{2}->{STATES}});
-		    debug("Keeping locus 2 of iteration [$iteration].");
-
-		    $filtered_hash->{$iteration}->{2}->{SCORE} =
-		      $hash->{$iteration}->{2}->{SCORE};
-		    $filtered_hash->{$iteration}->{2}->{STATES} =
-		      $hash->{$iteration}->{2}->{STATES};
-		    $filtered_hash->{$iteration}->{2}->{NUMSTATES} =
-		      $num2states;
-		    $filtered_hash->{$iteration}->{2}->{LOCUS} =
-		      $hash->{$iteration}->{2}->{LOCUS};
-		  }
-		elsif(exists($hash->{$iteration}->{2}) &&
-		      exists($hash->{$iteration}->{2}->{SCORE}) &&
-		      !defined($hash->{$iteration}->{2}->{SCORE}))
-		  {error("The score for iteration [$iteration] size 2 is ",
-			 "undefined.  This should not have happened.")}
-		elsif(exists($hash->{$iteration}->{2}) &&
-		      !exists($hash->{$iteration}->{2}->{SCORE}))
-		  {error("The score for iteration [$iteration] size 2 does ",
-			 "not exist.  This should not have happened.  Here's",
-			 "what's in the hash for size 2: [",
-			 join(',',keys(%{$hash->{$iteration}->{2}})),"].")}
-	      }
-	    else
-	      {debug("Skipping iteration [$iteration] because !(",
-		     "$hash->{$iteration}->{1}->{SCORE} >= $score1_min && ",
-		     "$num1states < 3).")}
-	  }
-
-	#Print the column headers
-	if(defined($outfile_suffix))
-	  {
-	    print("#Note: A score of 1 doesn't necessarily indicate a ",
-		  "perfect solution when given ambiguous input or data for ",
-		  "which there are missing values.\n",
-		  "#\"States\" are given in the format in which they were ",
-		  "input to SNPSTI.pl.  If SNPSTI-convert.pl was used, you ",
-		  "must convert these states back using the original cutoffs ",
-		  "to make sense of them.\n",
-		  "#Equivalent loci (in the sense of resolving power, not ",
-		  "state) will be shown comma-delimited.\n",
-		  "#Node\t",
-		  (scalar(@sample_info_files) ? "Node Description\t" : ''),
-		  "Greedy Num\tNum Target Samples with Real Values\t",
-		  "Total Num Samples with Real Values\t",
-		  "Num Locus 1 States Targets Exist in\t",
-		  "Num Locus 2 States Targets Exist in\tLocus 1\t",
-		  "Score Locus 1\tLocus 2\tScore Locus 2\t",
-		  "States(Targets/Total)\t","Call Locus 1\t","Call Locus 2\t",
-		  "Specificity Combined (and logic)\t",
-		  "Sensitivity Combined (and logic)\t",
-		  "Specificity Combined (or logic)\t",
-		  "Sensitivity Combined (or logic)\t",
-		  "Specificity Locus 1\t","Sensitivity Locus 1\t",
-		  "Specificity Locus 2\t","Sensitivity Locus 2","\n");
-	  }
-
-	#Now I want to sort by ascending number of states and descending score
-	#and print the results along with the equivalent loci:
-	foreach my $iteration
-	  (sort {$filtered_hash->{$a}->{1}->{NUMSTATES} <=>
-		   $filtered_hash->{$b}->{1}->{NUMSTATES} ||
-		     $filtered_hash->{$b}->{1}->{SCORE} <=>
-		       $filtered_hash->{$a}->{1}->{SCORE} ||
-			 (exists($filtered_hash->{$a}->{2}) &&
-			  exists($filtered_hash->{$b}->{2}) ?
-			  ($filtered_hash->{$a}->{2}->{NUMSTATES} <=>
-			   $filtered_hash->{$b}->{2}->{NUMSTATES} ||
-			   $filtered_hash->{$b}->{2}->{SCORE} <=>
-			   $filtered_hash->{$a}->{2}->{SCORE}) :
-			  0)} keys(%$filtered_hash))
-	    {
-	      debug("Outputting iteration [$iteration].");
-
-	      if(scalar(@sample_info_files) &&
-		 (!exists($desc_hash->{$node}) ||
-		  !defined($desc_hash->{$node})))
-		{
-		  error("Node: [$node] from input file: [$input_file] ",
-			"not found in sample info file: [$sampleinfo_file].  ",
-			"If the node named here is a file name, then that ",
-			"would mean that the node could not be found the ",
-			"SNPSTI standard error file: [$stderr_file].")
-		}
-
-	      if(exists($filtered_hash->{$iteration}->{2}))
-		{
-		  my $sens_spec_ary =
-		    (scalar(@sample_info_files) ?
-		     getSensitivitySpecificity($filtered_hash->{$iteration}
-					       ->{2}->{STATES},
-					       \@states,
-					       $desc_hash->{$node}->{NUM}) :
-		     []);
-
-		  my @mystates =
-		    convertStates($filtered_hash->{$iteration}->{2}->{STATES},
-				  \@states);
-
-		  print($node,"\t",
-			(scalar(@sample_info_files) ?
-			 (exists($desc_hash->{$node}) ?
-			  "$desc_hash->{$node}->{DESC}\t" : "$node\t") : ''),
-			$iteration,"\t",
-			$filtered_hash->{$iteration}->{REALTOTAL},"\t",
-			$filtered_hash->{$iteration}->{ALLTOTAL},"\t",
-			$filtered_hash->{$iteration}->{1}->{NUMSTATES},"\t",
-			(exists($filtered_hash->{$iteration}->{2}) ?
-			 $filtered_hash->{$iteration}->{2}->{NUMSTATES} :
-			 ''),"\t",
-			(exists($equiv_hash->{$filtered_hash->{$iteration}->{1}
-					      ->{LOCUS}}) ?
-			 $equiv_hash->{$filtered_hash->{$iteration}->{1}
-				       ->{LOCUS}} :
-			 $filtered_hash->{$iteration}->{1}->{LOCUS}),"\t",
-			$filtered_hash->{$iteration}->{1}->{SCORE},"\t",
-			(exists($equiv_hash->{$filtered_hash->{$iteration}->{2}
-					      ->{LOCUS}}) ?
-			 $equiv_hash->{$filtered_hash->{$iteration}->{2}
-				       ->{LOCUS}} :
-			 $filtered_hash->{$iteration}->{2}->{LOCUS}),"\t",
-			$filtered_hash->{$iteration}->{2}->{SCORE},"\t",
-			join(' ',@mystates),
-			(scalar(@sample_info_files) ? "\t" .
-			 join("\t",@$sens_spec_ary) . "\t" : ''),
-			"\n");
-		}
-	      else
-		{
-		  my $sens_spec_ary =
-		    (scalar(@sample_info_files) ?
-		     getSensitivitySpecificity($filtered_hash->{$iteration}
-					       ->{1}->{STATES},
-					       \@states,
-					       $desc_hash->{$node}->{NUM}) :
-		     []);
-
-		  my @mystates =
-		    convertStates($filtered_hash->{$iteration}->{1}->{STATES},
-				  \@states);
-
-		  print($node,"\t",
-			(scalar(@sample_info_files) ?
-			 (exists($desc_hash->{$node}) ?
-			  "$desc_hash->{$node}->{DESC}\t" : "$node\t") : ''),
-			$iteration,"\t",
-			$filtered_hash->{$iteration}->{REALTOTAL},"\t",
-			$filtered_hash->{$iteration}->{ALLTOTAL},"\t",
-			$filtered_hash->{$iteration}->{1}->{NUMSTATES},"\t\t",
-			(exists($equiv_hash->{$filtered_hash->{$iteration}->{1}
-					      ->{LOCUS}}) ?
-			 $equiv_hash->{$filtered_hash->{$iteration}->{1}
-				       ->{LOCUS}} :
-			 $filtered_hash->{$iteration}->{1}->{LOCUS}),"\t",
-			$filtered_hash->{$iteration}->{1}->{SCORE},"\t\t\t",
-			join(' ',@mystates),
-			(scalar(@sample_info_files) ? "\t" .
-			 join("\t",@$sens_spec_ary) . "\t" : ''),
-			"\n");
-		}
-	    }
 
 	#If an output file name suffix is set
 	if(defined($outfile_suffix))
@@ -1785,18 +1248,30 @@ foreach my $input_file_set (@input_files)
 
 	    verbose("[$current_output_file] Output file done.");
 	  }
-	$file_num++;
       }
-    $set_num++;
   }
-
 
 verbose("[STDOUT] Output done.") if(!defined($outfile_suffix));
 
 #Report the number of errors, warnings, and debugs on STDERR
-printRunReport($verbose) if(!$quiet && ($verbose || $DEBUG ||
-					defined($main::error_number) ||
-					defined($main::warning_number)));
+if(!$quiet && ($verbose                     ||
+	       $DEBUG                       ||
+	       defined($main::error_number) ||
+	       defined($main::warning_number)))
+  {
+    print STDERR ("\n",'Done.  EXIT STATUS: [',
+		  'ERRORS: ',
+		  ($main::error_number ? $main::error_number : 0),' ',
+		  'WARNINGS: ',
+		  ($main::warning_number ? $main::warning_number : 0),
+		  ($DEBUG ?
+		   ' DEBUGS: ' .
+		   ($main::debug_number ? $main::debug_number : 0) : ''),' ',
+		  'TIME: ',scalar(markTime(0)),"s]\n");
+
+    if($main::error_number || $main::warning_number)
+      {print STDERR ("Scroll up to inspect errors and warnings.\n")}
+  }
 
 ##
 ## End Main
@@ -1862,56 +1337,20 @@ Center for Computational Research
 Buffalo, NY 14203
 rwleach\@ccr.buffalo.edu
 
-* WHAT IS THIS: This script will take a partial solutions file created from
-                SNPSTI.pl *run on a single input tree node* and will report a
-                summary of the first two loci in each partial solution in tab-
-                delimited format.
+* WHAT IS THIS: This script will take an output file from SNPSTI.pl and convert
+                it into a format that is easier to read and understand.
 
-* INPUT FORMAT: A partial solutions file created from SNPSTI.pl *run on a
-                single input tree node*.
+* INPUT FORMAT: Standard output from SNPSTI.pl.  Note, the branch order must not differ from SNPSTI's default of ".ATGC-" or "012345".  Here's an example of what an uncommented line from a SNPSTI.pl output file would look like:
 
-* SNPSTI STDERR FILE: The standard error output created from SNPSTI.pl *run on
-                      a single input tree node*.
-
-* SAMPLE INFO FILE: A tab-delimited file containing node names and node
-                    descriptions.  The node names must match those found in the
-                    input and SNPSTI standard error files.  The description may
-                    span multiple columns which may be edited and joined
-                    together using --desc-delimiter and --desc-prepends.  The
-                    node names may be parsed out using -p.  There should be a
-                    row for every sample which will be counted for each node to
-                    determine sensitivity and specificity of each locus in each
-                    solution.  Example:
-
-#Sample	Main Branch	Major Branch	Minor Branch	Tissue Type	DFS Order
-TCGA-E2-A14X-01A-11R-A115-07	2(5TUMOR)	3(2TUMOR)	none1()	TUMOR	1
-TCGA-E2-A1IP-01A-11R-A14D-07	2(5TUMOR)	3(2TUMOR)	none2()	TUMOR	2
-TCGA-E2-A14R-01A-11R-A115-07	2(5TUMOR)	4(3TUMOR)	none3()	TUMOR	3
-TCGA-E2-A159-01A-11R-A115-07	2(5TUMOR)	4(3TUMOR)	5(2TUMOR)	TUMOR	4
-TCGA-E2-A1LH-01A-11R-A14D-07	2(5TUMOR)	4(3TUMOR)	5(2TUMOR)	TUMOR	5
-TCGA-E2-A1LA-01A-11R-A144-07	6(69TUMOR/10NORMAL)	7(10TUMOR)	8(3TUMOR)	TUMOR	6
-TCGA-E2-A108-01A-13R-A10J-07	6(69TUMOR/10NORMAL)	7(10TUMOR)	8(3TUMOR)	TUMOR	7
+100     1.1618278.1618278 13.36974267.36974287 16.30371327.31468191 17.1371699.1371894  _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 0 0 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 0 0 _ _ _ _ _ _ _ _ _ _ _ 0 _ _ _ _ 0 0 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 0 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 0 0 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 1 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 0 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 0 1 _ _ _ _ _ _ _ _ _ _ 0 _ _ _ _ _ 0 0 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 1 0 0 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 0 0 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 0 1 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 0 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 0 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 0 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 
-* OUTPUT FORMAT: Tab-delimited file.  The columns are as follows:
-
-                 Node
-                 Node Description
-                 Greedy Num
-                 Num Target Samples with Real Values
-                 Total Num Samples with Real Values
-                 Num Locus 1 States Targets Exist in
-                 Num Locus 2 States Targets Exist in
-                 Locus 1
-                 Score Locus 1
-                 Locus 2
-                 Score Locus 2
-                 States(Targets/Total)
-
-                 Example:
-
-100	5	11	56	2		SAMD13	0.448420373952289			T(6/47) A(5/6) -(0/3)
-100	6	11	56	2	3	SREBF1(0.444242424242424)	RRAGD	0.745059288537549	-T(5/5) TA(3/3) TT(3/46) T-(0/1) -A(0/1)
+* OUTPUT FORMAT: Each line of output includes 3 tab-delimited columns.  The 2nd
+                 and 3rd columns have space-delimited data.  Column 2 contains
+                 the SNP names that comprise the solution and column 3 contains
+                 possible value combinations of those SNPs in the same order.
+                 The number of SNPs and the number of characters in each string
+                 in column 3 correspond.
 
 * ADVANCED FILE I/O FEATURES: Sets of input files, each with different output
                               directories can be supplied.  Supply each file
@@ -1929,11 +1368,26 @@ TCGA-E2-A108-01A-13R-A10J-07	6(69TUMOR/10NORMAL)	7(10TUMOR)	8(3TUMOR)	TUMOR	7
 
                               -i 'a b c' --outdir '1' -i 'd e f' --outdir '2'
 
-                                 Result: 1/a,b,c  2/d,e,f
+                                 1/
+                                   a
+                                   b
+                                   c
+                                 2/
+                                   d
+                                   e
+                                   f
 
                               -i 'a b c' -i 'd e f' --outdir '1 2 3'
 
-                                 Result: 1/a,d  2/b,e  3/c,f
+                                 1/
+                                   a
+                                   d
+                                 2/
+                                   b
+                                   e
+                                 3/
+                                   c
+                                   f
 
                                  This is the default behavior if the number of
                                  sets and the number of files per set are all
@@ -1942,7 +1396,12 @@ TCGA-E2-A108-01A-13R-A10J-07	6(69TUMOR/10NORMAL)	7(10TUMOR)	8(3TUMOR)	TUMOR	7
 
                                     -i 'a b' -i 'd e' --outdir '1 2'
 
-                                       Result: 1/a,d  2/b,e
+                                       1/
+                                         a
+                                         d
+                                       2/
+                                         b
+                                         e
 
                                  NOT this: 1/a,b 2/d,e  To do this, you must
                                  supply the --outdir flag for each set, like
@@ -1952,11 +1411,29 @@ TCGA-E2-A108-01A-13R-A10J-07	6(69TUMOR/10NORMAL)	7(10TUMOR)	8(3TUMOR)	TUMOR	7
 
                               -i 'a b c' -i 'd e f' --outdir '1 2'
 
-                                 Result: 1/a,b,c  2/d,e,f
+                                 1/
+                                   a
+                                   b
+                                   c
+                                 2/
+                                   d
+                                   e
+                                   f
 
                               -i 'a b c' --outdir '1 2 3' -i 'd e f' --outdir '4 5 6'
 
-                                 Result: 1/a  2/b  3/c  4/d  5/e  6/f
+                                 1/
+                                   a
+                                 2/
+                                   b
+                                 3/
+                                   c
+                                 4/
+                                   d
+                                 5/
+                                   e
+                                 6/
+                                   f
 
 end_print
 
@@ -2007,39 +1484,6 @@ end_print
                                    --help for a description of the input file
                                    format.  See --help for advanced usage.
                                    *No flag required.
-     -e|--stderr-file     OPTIONAL SNPSTI.pl standard error file.  This file is
-                                   used to retrieve equivalent solutions.
-     --loc1-score-min     OPTIONAL [0] Minimum SNPSTI.pl solution score
-                                   (between 0 and 1) to allow through the
-                                   filter.  Minimum is applied to locus 1
-                                   (e.g. the first SNP in a greedy solution),
-                                   but if locus 1 doesn't pass this criteria,
-                                   locus 2 is skipped as well.
-     --loc2-score-min     OPTIONAL [0] Minimum SNPSTI.pl solution score
-                                   (between 0 and 1) to allow through the
-                                   filter.  Minimum is applied to locus 2
-                                   (e.g. the second SNP in a greedy solution).
-                                   If locus 2 doesn't pass this criteria,
-                                   locus 1 is still kept.
-     -s|--sampleinfo-file OPTIONAL [none] Sample Info file containing
-                                   descriptions for the node names found in the
-                                   solutions and standard error files.  See
-                                   --help for file format.
-     -d|--node-desc-col   OPTIONAL ["2 3 4"] The column numbers where node
-                                   descriptions can be found (joined together
-                                   using --desc-delimiter and --desc-prepends).
-     --desc-prepends      OPTIONAL ["Main- Major- Minor-"] These strings are
-                                   prepended to the respective node description
-                                   column values found in the columns supplied
-                                   with -d.  Space delimited.
-     --desc-delimiter     OPTIONAL [/] If multiple columns are supplied to -d,
-                                   the resulting description will be joined
-                                   together with this string and the strings
-                                   provided to --desc-prepends.
-     -p|--node-patern     OPTIONAL [^[^\(]+] Perl regular expression used to
-                                   parse the node name from the string found in
-                                   the column(s) indicated via -d.  Values not
-                                   matching this pattern will be ignored.
      -o|--outfile-suffix  OPTIONAL [nothing] This suffix is added to the input
                                    file names to use as output files.
                                    Redirecting a file into this script will
@@ -2047,13 +1491,10 @@ end_print
                                    with your suffix appended.  See --help for a
                                    description of the output file format.
      --outdir             OPTIONAL [input file location] Supply a directory to
-                                   put output files.  Note, if there are input
-                                   files from multiple directories going into
-                                   one output directory, they must not have the
-                                   same file name or they will be over-written.
-                                   This option requires an outfile suffix be
-                                   supplied (though an empty string is
-                                   allowed).  See --help for advanced usage.
+                                   put output files.  When supplied without -o,
+                                   the output file names will be the same as
+                                   the input file names.  See --help for
+                                   advanced usage.
      --force|--overwrite  OPTIONAL Force overwrite of existing output files.
                                    Only used when the -o option is supplied.
      --ignore             OPTIONAL Ignore critical errors & continue
@@ -2083,10 +1524,6 @@ end_print
                                    and command-line information will be printed
                                    at the top of all output files commented
                                    with '#' characters.
-     --error-type-limit   OPTIONAL [50] Limit errors and warnings to this
-                                   number of each error/warning type.  A value
-                                   of 0 means there is no limit.  Use --quiet
-                                   to suppress all errors and warnings.
 
 end_print
       }
@@ -2231,9 +1668,6 @@ sub verboseOverMe
 ## trace route back to main to see where all the subroutine calls were from,
 ## the line number of each call, an error number, and the name of the script
 ## which generated the error (in case scripts are called via a system call).
-## Globals used defined in main: error_limit, quiet, verbose
-## Globals used defined in here: error_hash, error_number
-## Globals used defined in subs: last_verbose_state, last_verbose_size
 ##
 sub error
   {
@@ -2250,82 +1684,49 @@ sub error
 
     #Assign the values from the calling subroutines/main
     my(@caller_info,$line_num,$caller_string,$stack_level,$script);
-
-    #Build a trace-back string.  This will be used for tracking the number of
-    #each type of error as well as embedding into the error message in debug
-    #mode.
-    $script = $0;
-    $script =~ s/^.*\/([^\/]+)$/$1/;
-    @caller_info = caller(0);
-    $line_num = $caller_info[2];
-    $caller_string = '';
-    $stack_level = 1;
-    while(@caller_info = caller($stack_level))
-      {
-	my $calling_sub = $caller_info[3];
-	$calling_sub =~ s/^.*?::(.+)$/$1/ if(defined($calling_sub));
-	$calling_sub = (defined($calling_sub) ? $calling_sub : 'MAIN');
-	$caller_string .= "$calling_sub(LINE$line_num):"
-	  if(defined($line_num));
-	$line_num = $caller_info[2];
-	$stack_level++;
-      }
-    $caller_string .= "MAIN(LINE$line_num):";
-
     if($DEBUG)
-      {$leader_string .= "$script:$caller_string"}
+      {
+	$script = $0;
+	$script =~ s/^.*\/([^\/]+)$/$1/;
+	@caller_info = caller(0);
+	$line_num = $caller_info[2];
+	$caller_string = '';
+	$stack_level = 1;
+	while(@caller_info = caller($stack_level))
+	  {
+	    my $calling_sub = $caller_info[3];
+	    $calling_sub =~ s/^.*?::(.+)$/$1/ if(defined($calling_sub));
+	    $calling_sub = (defined($calling_sub) ? $calling_sub : 'MAIN');
+	    $caller_string .= "$calling_sub(LINE$line_num):"
+	      if(defined($line_num));
+	    $line_num = $caller_info[2];
+	    $stack_level++;
+	  }
+	$caller_string .= "MAIN(LINE$line_num):";
+	$leader_string .= "$script:$caller_string";
+      }
 
     $leader_string .= ' ';
-    my $leader_length = length($leader_string);
 
     #Figure out the length of the first line of the error
     my $error_length = length(($error_message[0] =~ /\S/ ?
 			       $leader_string : '') .
 			      $error_message[0]);
 
-    #Clean up any previous verboseOverMe output that may be longer than the
-    #first line of the error message, put leader string at the beginning of
-    #each line of the message, and indent each subsequent line by the length
-    #of the leader string
-    my $error_string = $leader_string . shift(@error_message) .
-      ($verbose && defined($main::last_verbose_state) &&
-       $main::last_verbose_state ?
-       ' ' x ($main::last_verbose_size - $error_length) : '') . "\n";
+    #Put location information at the beginning of the first line of the message
+    #and indent each subsequent line by the length of the leader string
+    print STDERR ($leader_string,
+		  shift(@error_message),
+		  ($verbose &&
+		   defined($main::last_verbose_state) &&
+		   $main::last_verbose_state ?
+		   ' ' x ($main::last_verbose_size - $error_length) : ''),
+		  "\n");
+    my $leader_length = length($leader_string);
     foreach my $line (@error_message)
-      {$error_string .= (' ' x $leader_length) . $line . "\n"}
-
-    #If the global error hash does not yet exist, store the first example of
-    #this error type
-    if(!defined($main::error_hash) ||
-       !exists($main::error_hash->{$caller_string}))
-      {
-	$main::error_hash->{$caller_string}->{EXAMPLE}    = $error_string;
-	$main::error_hash->{$caller_string}->{EXAMPLENUM} =
-	  $main::error_number;
-
-	$main::error_hash->{$caller_string}->{EXAMPLE} =~ s/\n */ /g;
-	$main::error_hash->{$caller_string}->{EXAMPLE} =~ s/ $//g;
-	$main::error_hash->{$caller_string}->{EXAMPLE} =~ s/^(.{100}).+/$1.../;
-      }
-
-    #Increment the count for this error type
-    $main::error_hash->{$caller_string}->{NUM}++;
-
-    #Print the error unless it is over the limit for its type
-    if($error_limit == 0 ||
-       $main::error_hash->{$caller_string}->{NUM} <= $error_limit)
-      {
-	print STDERR ($error_string);
-
-	#Let the user know if we're going to start suppressing errors of this
-	#type
-	if($error_limit &&
-	   $main::error_hash->{$caller_string}->{NUM} == $error_limit)
-	  {print STDERR ($leader_string,"NOTE: Further errors of this type ",
-			 "will be suppressed.\n$leader_string",
-			 "Set --error-type-limit to 0 to turn off error ",
-			 "suppression\n")}
-      }
+      {print STDERR (' ' x $leader_length,
+		     $line,
+		     "\n")}
 
     #Reset the verbose states if verbose is true
     if($verbose)
@@ -2343,15 +1744,19 @@ sub error
 ## Subroutine that prints warnings with a leader string containing a warning
 ## number
 ##
-## Globals used defined in main: error_limit, quiet, verbose
-## Globals used defined in here: warning_hash, warning_number
-## Globals used defined in subs: last_verbose_state, last_verbose_size
-##
 sub warning
   {
     return(0) if($quiet);
 
     $main::warning_number++;
+
+
+
+
+#Save an example of the warning in a hash keyed on the trace string.  Save the number of this type of error and use $warn_report_limit as the cutoff for when to stop printing that type of warning.
+
+
+
 
     #Gather and concatenate the warning message and split on hard returns
     my @warning_message = split(/\n/,join('',grep {defined($_)} @_));
@@ -2363,85 +1768,50 @@ sub warning
 
     #Assign the values from the calling subroutines/main
     my(@caller_info,$line_num,$caller_string,$stack_level,$script);
-
-    #Build a trace-back string.  This will be used for tracking the number of
-    #each type of warning as well as embedding into the warning message in
-    #debug mode.
-    $script = $0;
-    $script =~ s/^.*\/([^\/]+)$/$1/;
-    @caller_info = caller(0);
-    $line_num = $caller_info[2];
-    $caller_string = '';
-    $stack_level = 1;
-    while(@caller_info = caller($stack_level))
-      {
-	my $calling_sub = $caller_info[3];
-	$calling_sub =~ s/^.*?::(.+)$/$1/ if(defined($calling_sub));
-	$calling_sub = (defined($calling_sub) ? $calling_sub : 'MAIN');
-	$caller_string .= "$calling_sub(LINE$line_num):"
-	  if(defined($line_num));
-	$line_num = $caller_info[2];
-	$stack_level++;
-      }
-    $caller_string .= "MAIN(LINE$line_num):";
-
     if($DEBUG)
-      {$leader_string .= "$script:$caller_string"}
+      {
+	$script = $0;
+	$script =~ s/^.*\/([^\/]+)$/$1/;
+	@caller_info = caller(0);
+	$line_num = $caller_info[2];
+	$caller_string = '';
+	$stack_level = 1;
+	while(@caller_info = caller($stack_level))
+	  {
+	    my $calling_sub = $caller_info[3];
+	    $calling_sub =~ s/^.*?::(.+)$/$1/ if(defined($calling_sub));
+	    $calling_sub = (defined($calling_sub) ? $calling_sub : 'MAIN');
+	    $caller_string .= "$calling_sub(LINE$line_num):"
+	      if(defined($line_num));
+	    $line_num = $caller_info[2];
+	    $stack_level++;
+	  }
+	$caller_string .= "MAIN(LINE$line_num):";
+	$leader_string .= "$script:$caller_string";
+      }
 
-    $leader_string   .= ' ';
-    my $leader_length = length($leader_string);
+    $leader_string .= ' ';
 
     #Figure out the length of the first line of the error
     my $warning_length = length(($warning_message[0] =~ /\S/ ?
 				 $leader_string : '') .
 				$warning_message[0]);
 
-    #Clean up any previous verboseOverMe output that may be longer than the
-    #first line of the warning message, put leader string at the beginning of
-    #each line of the message and indent each subsequent line by the length
-    #of the leader string
-    my $warning_string =
-      $leader_string . shift(@warning_message) .
-	($verbose && defined($main::last_verbose_state) &&
-	 $main::last_verbose_state ?
-	 ' ' x ($main::last_verbose_size - $warning_length) : '') .
-	   "\n";
+    #Put leader string at the beginning of each line of the message
+    #and indent each subsequent line by the length of the leader string
+    print STDERR ($leader_string,
+		  shift(@warning_message),
+		  ($verbose &&
+		   defined($main::last_verbose_state) &&
+		   $main::last_verbose_state ?
+		   ' ' x ($main::last_verbose_size - $warning_length) : ''),
+		  "\n");
+
+    my $leader_length = length($leader_string);
     foreach my $line (@warning_message)
-      {$warning_string .= (' ' x $leader_length) . $line . "\n"}
-
-    #If the global warning hash does not yet exist, store the first example of
-    #this warning type
-    if(!defined($main::warning_hash) ||
-       !exists($main::warning_hash->{$caller_string}))
-      {
-	$main::warning_hash->{$caller_string}->{EXAMPLE}    = $warning_string;
-	$main::warning_hash->{$caller_string}->{EXAMPLENUM} =
-	  $main::warning_number;
-
-	$main::warning_hash->{$caller_string}->{EXAMPLE} =~ s/\n */ /g;
-	$main::warning_hash->{$caller_string}->{EXAMPLE} =~ s/ $//g;
-	$main::warning_hash->{$caller_string}->{EXAMPLE} =~
-	  s/^(.{100}).+/$1.../;
-      }
-
-    #Increment the count for this warning type
-    $main::warning_hash->{$caller_string}->{NUM}++;
-
-    #Print the warning unless it is over the limit for its type
-    if($error_limit == 0 ||
-       $main::warning_hash->{$caller_string}->{NUM} <= $error_limit)
-      {
-	print STDERR ($warning_string);
-
-	#Let the user know if we're going to start suppressing warnings of this
-	#type
-	if($error_limit &&
-	   $main::warning_hash->{$caller_string}->{NUM} == $error_limit)
-	  {print STDERR ($leader_string,"NOTE: Further warnings of this ",
-			 "type will be suppressed.\n$leader_string",
-			 "Set --error-type-limit to 0 to turn off error ",
-			 "suppression\n")}
-      }
+      {print STDERR (' ' x $leader_length,
+		     $line,
+		     "\n")}
 
     #Reset the verbose states if verbose is true
     if($verbose)
@@ -2698,6 +2068,8 @@ sub getCommand
 ## programs which accept individual files as opposed to sets of files.  If the
 ## user wants to enter multiple files, it is assumed that space delimiting will
 ## prompt the user to realize they need to escape the spaces in the file names.
+## Note, this will not work on sets of files containing a mix of spaces and
+## glob characters.
 ##
 sub sglob
   {
@@ -2707,15 +2079,27 @@ sub sglob
 	warning("Undefined command line string encountered.");
 	return($command_line_string);
       }
-    return(sort {$a cmp $b} map {my @x = bsd_glob($_);scalar(@x) ? @x : $_}
-	   split(/(?<!\\)\s+/,$command_line_string));
+    return(#If matches unescaped spaces
+	   $command_line_string =~ /(?!\\)\s+/ &&
+	   #And all separated args are files
+	   scalar(@{[bsd_glob($command_line_string)]}) ==
+	   scalar(@{[grep {-e $_} bsd_glob($command_line_string)]}) ?
+	   #Return the glob array
+	   bsd_glob($command_line_string) :
+	   #If it's a series of all files with escaped spaces
+	   (scalar(@{[split(/(?!\\)\s/,$command_line_string)]}) ==
+	    scalar(@{[grep {-e $_} split(/(?!\\)\s+/,$command_line_string)]}) ?
+	    split(/(?!\\)\s+/,$command_line_string) :
+	    #Return the single arg
+	    ($command_line_string =~ /\*|\?|\[/ ?
+	     bsd_glob($command_line_string) : $command_line_string)));
   }
 
 
 sub getVersion
   {
     my $full_version_flag = $_[0];
-    my $template_version_number = '1.44';
+    my $template_version_number = '1.43';
     my $version_message = '';
 
     #$software_version_number  - global
@@ -2782,305 +2166,4 @@ sub quit
 
     #Exit if we are not ignoring errors or if there were no errors at all
     exit($errno) if(!$ignore_errors || $errno == 0);
-  }
-
-sub printRunReport
-  {
-    my $extended = $_[0];
-
-    return(0) if($quiet);
-
-    #Report the number of errors, warnings, and debugs on STDERR
-    print STDERR ("\n",'Done.  EXIT STATUS: [',
-		  'ERRORS: ',
-		  ($main::error_number ? $main::error_number : 0),' ',
-		  'WARNINGS: ',
-		  ($main::warning_number ? $main::warning_number : 0),
-		  ($DEBUG ?
-		   ' DEBUGS: ' .
-		   ($main::debug_number ? $main::debug_number : 0) : ''),' ',
-		  'TIME: ',scalar(markTime(0)),"s]");
-
-    #If the user wants the extended report
-    if($extended)
-      {
-	if($main::error_number || $main::warning_number)
-	  {print STDERR " SUMMARY:\n"}
-	else
-	  {print STDERR "\n"}
-
-	#If there were errors
-	if($main::error_number)
-	  {
-	    foreach my $err_type
-	      (sort {$main::error_hash->{$a}->{EXAMPLENUM} <=>
-		       $main::error_hash->{$b}->{EXAMPLENUM}}
-	       keys(%$main::error_hash))
-	      {print STDERR ("\t",$main::error_hash->{$err_type}->{NUM},
-			     " ERROR",
-			     ($main::error_hash->{$err_type}->{NUM} > 1 ?
-			      'S' : '')," LIKE: [",
-			     $main::error_hash->{$err_type}->{EXAMPLE},"]\n")}
-	  }
-
-	#If there were warnings
-	if($main::warning_number)
-	  {
-	    foreach my $warn_type
-	      (sort {$main::warning_hash->{$a}->{EXAMPLENUM} <=>
-		       $main::warning_hash->{$b}->{EXAMPLENUM}}
-	       keys(%$main::warning_hash))
-	      {print STDERR ("\t",$main::warning_hash->{$warn_type}->{NUM},
-			     " WARNING",
-			     ($main::warning_hash->{$warn_type}->{NUM} > 1 ?
-			      'S' : '')," LIKE: [",
-			     $main::warning_hash->{$warn_type}->{EXAMPLE},
-			     "]\n")}
-	  }
-      }
-    else
-      {print STDERR "\n"}
-
-    if($main::error_number || $main::warning_number)
-      {print STDERR ("\tScroll up to inspect full errors/warnings ",
-		     "in-place.\n")}
-  }
-
-#This parses the sample info file
-sub getDescHash
-  {
-    my $file        = $_[0];
-    my $indexes     = $_[1];
-    my $prepends    = $_[2];
-    my $delimiter   = $_[3];
-    my $node_pat    = $_[4];
-    my $hash        = {};
-    my $backup_hash = {};
-
-    my $largest_col = (sort {$b <=> $a} @$indexes)[0] + 1;
-
-    #Open the input file
-    if(!open(FILE,$file))
-      {
-	#Report an error and iterate if there was an error
-	error("Unable to open sample info file: [$file].\n$!");
-	return($hash);
-      }
-    else
-      {verbose("[$file] Opened sample info file.")}
-
-    while(getLine(*FILE))
-      {
-	next if(/^#/ || /^\s*$/);
-	chomp;
-	my @x = split(/\t/,$_);
-	if(scalar(@x) < $largest_col)
-	  {
-	    warning("Too few columns in file: [$file] line: [$_].");
-	    next;
-	  }
-	my $path = '';
-	my $backup_path = '';
-	my $cnt = 0;
-	foreach my $i (@$indexes)
-	  {
-	    if($x[$i] =~ /(.*?($node_pat).*)/)
-	      {
-		my $name = $1;
-		my $node = $2;
-		unless(exists($hash->{$node}))
-		  {$hash->{$node}->{DESC} .= $path .
-		     ($path eq '' ? '' : $delimiter) . $prepends->[$cnt] .
-		       $name}
-		$path = $path . ($path eq '' ? '' : $delimiter) .
-		  $prepends->[$cnt] . $name;
-		$backup_path = $path;
-		$hash->{$node}->{NUM}++;
-	      }
-	    else
-	      {
-		warning("Unmatched node description: [$x[$i]] using pattern ",
-			"(-p): [$node_pat].");
-		unless(exists($hash->{$x[$i]}))
-		  {$backup_hash->{$x[$i]}->{DESC} = $backup_path .
-		     ($backup_path eq '' ? '' : $delimiter) .
-		       $prepends->[$i] . $x[$i]}
-		$backup_path = $backup_path .
-		  ($backup_path eq '' ? '' : $delimiter) .
-		    $prepends->[$i] . $x[$i];
-		$backup_hash->{$x[$i]}->{NUM}++;
-	      }
-	    $cnt++;
-	  }
-      }
-
-    close(FILE);
-
-    return(scalar(keys(%$hash)) ? $hash : $backup_hash);
-  }
-
-sub getSensitivitySpecificity
-  {
-    my $instates     = $_[0]; #[[?,state_str,numer,denom],
-                              # [?,state_str,numer,denom],...]
-    my $states       = $_[1]; #From @states in main
-    my $node_size    = $_[2]; #From $desc_hash->{$node}->{NUM}
-    my $extras_array = [];
-
-    my $first_time            = 1;
-    my $num_targets_state1    = 0;
-    my $total_state1          = 0;
-    my $num_targets_state2    = 0;
-    my $total_state2          = 1; #Default to 1 so no div. by 0 if no state2
-                                   #exists
-    my $num_targets_state1or2 = 0;
-    my $total_state1or2       = 0;
-    my $state1                = '';
-    my $state2                = '';
-
-    #Sort by descending numerator
-    foreach my $instate (sort {$b->[2] <=> $a->[2] || $a->[3] <=> $b->[3]}
-			 @$instates)
-      {
-	my $state_str = $instate->[1];
-	my $numer     = $instate->[2];
-	my $denom     = $instate->[3];
-
-	debug("Doing state [$state_str] numer [$numer] denom [$denom].");
-
-	#If this is the first time through the loop, this is the first and most
-	#abundant state, so record what locus 1 and 2 are.
-	if($first_time)
-	  {
-	    debug("Setting locus states.");
-
-	    if($state_str =~ /^(\S)(\S)$/)
-	      {
-		$state1 = $1;
-		$state2 = $2 || '';
-		#Push on the call for locus 1
-		push(@$extras_array,convertState($state1,$states));
-		#Push on the call for locus 2
-		push(@$extras_array,convertState($state2,$states));
-		#Push on the combined specificity and sensitivity
-		push(@$extras_array,($numer/$denom,$numer/$node_size));
-		$total_state2 = 0;
-	      }
-	    elsif($state_str =~ /^(\S)$/)
-	      {
-		$state1 = $1;
-		$state2 = '';
-		#Push on the call for locus 1
-		push(@$extras_array,convertState($state1,$states));
-		#Push on the call for locus 2
-		push(@$extras_array,convertState($state2,$states));
-		#Push on the combined specificity and sensitivity
-		push(@$extras_array,($numer/$denom,$numer/$node_size));
-	      }
-	  }
-
-	#If the current state has locus 1 as the same state as its most
-	#abundant (i.e. first state), sum its numerator and denominator, (i.e.
-	#the number of targets in this state and the total number of samples in
-	#this state
-	if($state_str =~ /^$state1/)
-	  {
-	    debug("Adding state1's numer $numer and denom $denom.");
-	    $num_targets_state1    += $numer;
-	    $total_state1          += $denom;
-	    $num_targets_state1or2 += $numer;
-	    $total_state1or2       += $denom;
-	  }
-
-	#If there is a second locus
-	if($state2 ne '')
-	  {
-	    #If the current state has locus 2 as the same state as its most
-	    #abundant (i.e. first state), sum its numerator and denominator,
-	    #(i.e. the number of targets in this state and the total number of
-	    #samples in this state
-	    if($state_str =~ /^[\.ATGC\-]$state2/)
-	      {
-		debug("Adding state2's numer $numer and denom $denom.");
-		$num_targets_state2 += $numer;
-		$total_state2       += $denom;
-
-		#If these weren't added already, add them
-		if($state_str !~ /^$state1/)
-		  {
-		    $num_targets_state1or2 += $numer;
-		    $total_state1or2       += $denom;
-		  }
-	      }
-	  }
-
-	$first_time = 0;
-      }
-
-    debug("Result of locus 2 spec & sens: [$num_targets_state2/$total_state2 ",
-	  "& $num_targets_state2/$node_size].");
-
-    push(@$extras_array,($num_targets_state1or2/$total_state1or2,
-			 $num_targets_state1or2/$node_size,
-			 $num_targets_state1/$total_state1,
-			 $num_targets_state1/$node_size,
-			 ($num_targets_state2/$total_state2 || ""),
-			 ($num_targets_state2/$node_size) || ""));
-
-    return(wantarray ? @$extras_array : $extras_array);
-  }
-
-sub convertStates
-  {
-    my $instates = $_[0]; #[[?,state_str,numer,denom],
-                          # [?,state_str,numer,denom],...]
-    my $states   = $_[1];
-
-    my $outstates = [];
-
-    #Sort by descending numerator
-    foreach my $instate (sort {$b->[2] <=> $a->[2] || $a->[3] <=> $b->[3]}
-			 @$instates)
-      {
-	my $state_str = $instate->[1];
-	my $numer     = $instate->[2];
-	my $denom     = $instate->[3];
-
-	#Convert the states
-	$state_str =~ s/\./$states->[0],/g;
-	$state_str =~ s/[A1]/$states->[1],/g if(scalar(@$states) > 1);
-	$state_str =~ s/[T2]/$states->[2],/g if(scalar(@$states) > 2);
-	$state_str =~ s/[G3]/$states->[3],/g if(scalar(@$states) > 3);
-	$state_str =~ s/[C4]/$states->[4],/g if(scalar(@$states) > 4);
-	$state_str =~ s/[\-5]/$states->[5],/g if(scalar(@$states) > 5);
-	$state_str =~ s/,$//g;
-
-	push(@$outstates,"$state_str($numer/$denom)");
-      }
-
-    return(wantarray ? @$outstates : $outstates);
-  }
-
-sub convertState
-  {
-    my $state = $_[0];
-    my $states = $_[1];
-    my $outstate = 'err';
-
-    if($state eq '' || !defined($state))
-      {$outstate = ''}
-    elsif($state =~ /^\.$/)
-      {$outstate = $states->[0]}
-    elsif($state =~ /^[A1]$/)
-      {$outstate = $states->[1] if(scalar(@$states) > 1)}
-    elsif($state =~ /^[T2]$/)
-      {$outstate = $states->[2] if(scalar(@$states) > 2)}
-    elsif($state =~ /^[G3]$/)
-      {$outstate = $states->[3] if(scalar(@$states) > 3)}
-    elsif($state =~ /^[C4]$/)
-      {$outstate = $states->[4] if(scalar(@$states) > 4)}
-    elsif($state =~ /^[\-5]$/)
-      {$outstate = $states->[5] if(scalar(@$states) > 5)}
-
-    return($outstate);
   }
