@@ -1,0 +1,7 @@
+This suite of scripts is designed to take a phylogenetic tree and a table of SNPs and assign SNP solutions to each branch of the tree, the SNP combinations which resolve the genomes at the leaves of the subtree from the rest of the tree.
+
+Required modules:
+
+tree.pm (available through github at hepcat72/tree.git)
+
+The main script is SNPSTI.pl.  It outputs coded solutions to the nodes of the tree.  Those solutions can be converted to a human-readable format using SNPSTI2humanreadable.pl.  You can generate an input SNP table by running find_snps.pl.  If you run SNPSTI.pl in verbose mode, capturing greedy solutions, you can generate a summary of the greedily constructed sets (i.e. imperfect solutions) using SNPSTI-greedysummaries.pl.
